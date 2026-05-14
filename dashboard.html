@@ -436,20 +436,27 @@
       <span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Período:</span>
       <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 12px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
         <span style="font-size:11px;color:var(--muted);font-weight:600;">De</span>
-        <input type="date" id="dateFrom" onchange="onDateChange()" style="border:none;background:transparent;font-family:var(--font-body);font-size:13px;color:var(--text);cursor:pointer;outline:none;">
+        <input type="date" id="dateFrom" style="border:none;background:transparent;font-family:var(--font-body);font-size:13px;color:var(--text);cursor:pointer;outline:none;">
         <span style="font-size:11px;color:var(--muted);font-weight:600;">Até</span>
-        <input type="date" id="dateTo" onchange="onDateChange()" style="border:none;background:transparent;font-family:var(--font-body);font-size:13px;color:var(--text);cursor:pointer;outline:none;">
-        <button onclick="resetDateRange()" style="border:none;background:rgba(0,0,0,0.05);cursor:pointer;color:var(--muted);font-size:11px;padding:3px 8px;border-radius:6px;box-shadow:none;font-weight:600;">✕</button>
+        <input type="date" id="dateTo" style="border:none;background:transparent;font-family:var(--font-body);font-size:13px;color:var(--text);cursor:pointer;outline:none;">
+        <button onclick="applyDateRange()" style="border:none;background:linear-gradient(135deg,var(--rosa),var(--coral));cursor:pointer;color:#fff;font-size:12px;padding:5px 14px;border-radius:8px;box-shadow:none;font-weight:700;letter-spacing:.3px;">✔ OK</button>
+        <button onclick="resetDateRange()" style="border:none;background:rgba(0,0,0,0.05);cursor:pointer;color:var(--muted);font-size:11px;padding:5px 10px;border-radius:8px;box-shadow:none;font-weight:600;">✕</button>
       </div>
       <span id="dateRangeInfo" style="font-size:12px;color:var(--rosa);font-weight:600;display:none;"></span>
     </div>
   </header>
 
   <!-- STATUS BAR -->
-  <div class="status-bar">
-    <div class="status-dot" id="statusDot"></div>
-    <span class="status-text" id="statusText">Nenhum dado carregado. Importe CSVs ou configure o GitHub.</span>
-    <span id="storesBadges"></span>
+  <div class="status-bar" style="flex-direction:column;align-items:flex-start;gap:10px;">
+    <div style="display:flex;align-items:center;gap:10px;width:100%;flex-wrap:wrap;">
+      <div class="status-dot" id="statusDot"></div>
+      <span class="status-text" id="statusText">Nenhum dado carregado. Importe CSVs ou configure o GitHub.</span>
+      <span id="storesBadges"></span>
+    </div>
+    <!-- Loading progress bars -->
+    <div id="loadProgress" style="display:none;width:100%;display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;" id="progressBars"></div>
+    </div>
   </div>
 
   <div id="alertStrip"></div>
@@ -815,7 +822,9 @@ function getFilteredRows() {
 function resetDateRange() {
   document.getElementById('dateFrom').value = '';
   document.getElementById('dateTo').value = '';
-  applyFilters();
+  const info = document.getElementById('dateRangeInfo');
+  if (info) info.style.display = 'none';
+  if (Object.keys(rawData).length) applyFilters();
 }
 
 // Initialize date range to full available range after load
@@ -823,19 +832,21 @@ function initDateRange() {
   // Default: show all data (empty = no filter)
 }
 
-function onDateChange() {
-  // Update info label immediately
+function applyDateRange() {
   const fromVal = document.getElementById('dateFrom')?.value;
   const toVal   = document.getElementById('dateTo')?.value;
   const info = document.getElementById('dateRangeInfo');
+  const fmtD = v => v ? v.split('-').reverse().join('/') : '—';
   if (fromVal || toVal) {
-    const fmtD = v => v ? v.split('-').reverse().join('/') : '—';
     if (info) { info.style.display='inline'; info.textContent = `📅 ${fmtD(fromVal)} → ${fmtD(toVal)}`; }
   } else {
     if (info) info.style.display = 'none';
   }
-  // Only apply if data is loaded
-  if (Object.keys(rawData).length) applyFilters();
+  if (!Object.keys(rawData).length) {
+    showAlert('Aguarde os dados carregarem antes de filtrar.');
+    return;
+  }
+  applyFilters();
 }
 
 function applyFilters() {
