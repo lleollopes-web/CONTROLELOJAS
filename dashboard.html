@@ -561,7 +561,7 @@ async function autoLoadGitHub() {
       const fname = STORES[si].files[yr];
       if (!fname) continue;
       try {
-        const url = GITHUB_BASE_URL + encodeURIComponent(fname);
+        const url = GITHUB_BASE_URL + fname.split('').map(c => encodeURIComponent(c) === c ? c : encodeURIComponent(c)).join('');
         const res = await fetch(url);
         if (!res.ok) { errors++; continue; }
         const text = await res.text();
@@ -579,7 +579,7 @@ const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/lleollopes-web/CONTRO
 const STORES = [
   { name: 'Intimissimi Iguatemi', short: 'Iguatemi',   files: { 2025: '2025 - INTIMISSIMI - IGUATEMI.csv', 2026: '2026 - INTIMISSIMI - IGUATEMI.CSV'  }, color: '#E91E8C', colorLight:'rgba(233,30,140,0.15)' },
   { name: 'Intimissimi RioMar',   short: 'RioMar',     files: { 2025: '2025 - INTIMISSIMI - RIOMAR.csv',   2026: '2026 - INTIMISSIMI - RIOMAR.CSV'   }, color: '#00D4FF', colorLight:'rgba(0,212,255,0.15)'   },
-  { name: 'Calzedonia Iguatemi',  short: 'Calzedonia', files: { 2025: '2025 - CALZED\u00d4NIA - IGUATEMI.csv',  2026: '2026 - CALZED\u00d4NIA - IGUATEMI.CSV'  }, color: '#FFB627', colorLight:'rgba(255,182,39,0.15)'   },
+  { name: 'Calzedonia Iguatemi',  short: 'Calzedonia', files: { 2025: '2025 - CALZEDÔNIA - IGUATEMI.csv',  2026: '2026 - CALZEDÔNIA - IGUATEMI.CSV'  }, color: '#FFB627', colorLight:'rgba(255,182,39,0.15)'   },
 ];
 
 /* File slots for manual upload */
@@ -681,7 +681,7 @@ async function loadFromGitHub() {
       const fname = STORES[si].files[yr];
       if (!fname) continue;
       try {
-        const url = GITHUB_BASE_URL + encodeURIComponent(fname);
+        const url = GITHUB_BASE_URL + fname.split('').map(c => encodeURIComponent(c) === c ? c : encodeURIComponent(c)).join('');
         const res = await fetch(url);
         if (!res.ok) { errors++; continue; }
         const text = await res.text();
@@ -828,9 +828,10 @@ function renderDashboard(rows) {
   rows.forEach(r=>{
     const p=(r.DESC_PRODUTO||'').trim();
     if(!p) return;
-    if(!byProd[p]) byProd[p]={qtde:0,val:0};
+    if(!byProd[p]) byProd[p]={qtde:0,val:0,cod:(r.PRODUTO||'').trim(),cor:(r.COR_PRODUTO||'').trim()};
     byProd[p].qtde+=(+r.QTDE_LIQUIDA||0);
     byProd[p].val+=parseBR(r.VALOR_LIQUIDO_VENDA);
+    if(!byProd[p].cor && r.COR_PRODUTO) byProd[p].cor=(r.COR_PRODUTO||'').trim();
   });
   const topProd = Object.entries(byProd).sort((a,b)=>b[1].qtde-a[1].qtde).slice(0,10);
 
@@ -858,6 +859,26 @@ function renderDashboard(rows) {
     if(!byCat[c]) byCat[c]=0;
     byCat[c]+=parseBR(r.VALOR_LIQUIDO_VENDA);
   });
+
+  // Top 5 por Subgrupo
+  const bySubGrupo = {};
+  rows.forEach(r=>{
+    const sg=(r.SUBGRUPO_PRODUTO||'').trim();
+    const p=(r.DESC_PRODUTO||'').trim();
+    if(!sg||!p) return;
+    if(!bySubGrupo[sg]) bySubGrupo[sg]={};
+    if(!bySubGrupo[sg][p]) bySubGrupo[sg][p]={qtde:0,val:0,cod:(r.PRODUTO||'').trim(),cor:(r.COR_PRODUTO||'').trim(),desc:p};
+    bySubGrupo[sg][p].qtde+=(+r.QTDE_LIQUIDA||0);
+    bySubGrupo[sg][p].val+=parseBR(r.VALOR_LIQUIDO_VENDA);
+  });
+  const topBySubgrupo = Object.entries(bySubGrupo)
+    .map(([sub,prods])=>({
+      sub,
+      items: Object.values(prods).sort((a,b)=>b.qtde-a.qtde).slice(0,5),
+      total: Object.values(prods).reduce((a,b)=>a+b.qtde,0)
+    }))
+    .sort((a,b)=>b.total-a.total)
+    .slice(0,8);
 
   // Vendedores top
   const byVend = {};
@@ -939,17 +960,46 @@ function renderDashboard(rows) {
       </div>
       <table>
         <thead><tr>
-          <th>#</th><th>Produto</th><th>Qtde</th><th>Faturamento</th><th>% do Total</th>
+          <th>#</th><th>Código</th><th>Produto</th><th>Cor</th><th>Qtde</th><th>Faturamento</th><th>% do Total</th>
         </tr></thead>
         <tbody>
           ${topProd.map(([p,v],i)=>`
             <tr>
               <td class="rank">${i+1}</td>
+              <td style="font-family:monospace;font-size:12px;color:var(--muted)">${v.cod||'—'}</td>
               <td>${p}</td>
+              <td><span class="pill pill-amber" style="font-size:10px;">${v.cor||'—'}</span></td>
               <td><strong>${fmtN(v.qtde)}</strong></td>
               <td>${fmtBRL(v.val)}</td>
               <td><span class="pill ${i<3?'pill-rosa':'pill-verde'}">${faturamento?((v.val/faturamento)*100).toFixed(1)+'%':'—'}</span></td>
             </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TOP 5 POR SUBGRUPO -->
+    <div class="section-title">Top 5 por Subgrupo</div>
+    <div class="table-wrap d2" style="margin-bottom:18px;">
+      <div class="table-header">
+        <h3>5 Produtos Mais Vendidos por Subgrupo</h3>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Subgrupo</th><th>#</th><th>Código</th><th>Produto</th><th>Cor</th><th>Qtde</th><th>Faturamento</th>
+        </tr></thead>
+        <tbody>
+          ${topBySubgrupo.map(({sub,items})=>
+            items.map((v,i)=>`
+              <tr>
+                ${i===0 ? `<td rowspan="${items.length}" style="font-weight:600;font-size:12px;vertical-align:top;padding-top:14px;color:var(--rosa);border-right:2px solid var(--border);">${sub}</td>` : ''}
+                <td class="rank">${i+1}</td>
+                <td style="font-family:monospace;font-size:11px;color:var(--muted)">${v.cod||'—'}</td>
+                <td style="font-size:13px;">${v.desc}</td>
+                <td><span class="pill pill-amber" style="font-size:10px;">${v.cor||'—'}</span></td>
+                <td><strong>${fmtN(v.qtde)}</strong></td>
+                <td>${fmtBRL(v.val)}</td>
+              </tr>`).join('')
+          ).join('')}
         </tbody>
       </table>
     </div>
@@ -1084,16 +1134,51 @@ function doughnutOpts() {
   return {
     responsive:true, maintainAspectRatio:false,
     plugins:{
-      legend:{display:true},
+      legend:{
+        display:true,
+        position:'right',
+        labels:{color:'rgba(26,26,46,0.65)',font:{family:'DM Sans',size:11},boxWidth:12}
+      },
       tooltip:{
         backgroundColor:'rgba(255,255,255,0.98)',
         borderColor:'rgba(0,0,0,0.1)', borderWidth:1,
         titleColor:'#1A1A2E', bodyColor:'rgba(26,26,46,0.7)',
-        padding:12, cornerRadius:10
-      }
+        padding:12, cornerRadius:10,
+        callbacks:{
+          label: ctx => {
+            const total = ctx.dataset.data.reduce((a,b)=>a+b,0);
+            const pct = total ? ((ctx.raw/total)*100).toFixed(1) : 0;
+            return ` ${ctx.label}: R$ ${ctx.raw.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})} (${pct}%)`;
+          }
+        }
+      },
+      datalabels: false
     }
   };
 }
+
+// Plugin inline para % nos doughnuts
+const percentPlugin = {
+  id:'percentLabels',
+  afterDatasetsDraw(chart) {
+    const {ctx, data} = chart;
+    if(chart.config.type !== 'doughnut') return;
+    const total = data.datasets[0].data.reduce((a,b)=>a+b,0);
+    chart.getDatasetMeta(0).data.forEach((arc, i) => {
+      const pct = total ? ((data.datasets[0].data[i]/total)*100) : 0;
+      if(pct < 4) return; // skip tiny slices
+      const {x,y} = arc.tooltipPosition();
+      ctx.save();
+      ctx.font = 'bold 11px DM Sans';
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pct.toFixed(1)+'%', x, y);
+      ctx.restore();
+    });
+  }
+};
+Chart.register(percentPlugin);
 </script>
 </body>
 </html>
