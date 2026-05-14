@@ -547,14 +547,20 @@ let charts = {};
 /* ── PARSE helpers ── */
 function parseBR(v) {
   if (v === null || v === undefined) return 0;
-  const s = String(v).trim().replace(/\./g,'').replace(',','.');
+  let s = String(v).trim();
+  // Formato brasileiro: 1.234,56 → remove pontos de milhar, troca vírgula por ponto
+  if (s.includes(',')) {
+    s = s.replace(/\./g, '').replace(',', '.');
+  }
   return parseFloat(s) || 0;
 }
 function parseDate(s) {
   if (!s) return null;
   const [d,m,y] = String(s).trim().split('/');
   if (!y) return null;
-  return new Date(+y, +m-1, +d);
+  // Corrige ano com 2 dígitos: 26 → 2026, 25 → 2025
+  const fullYear = y.length === 2 ? 2000 + (+y) : +y;
+  return new Date(fullYear, +m-1, +d);
 }
 const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const MONTHS_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
