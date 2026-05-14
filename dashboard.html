@@ -819,6 +819,9 @@ function initDateRange() {
 }
 
 function applyFilters() {
+  // Don't run if no data loaded yet
+  if (!Object.keys(rawData).length) return;
+
   const rows = getFilteredRows();
   if (!rows.length) {
     document.getElementById('mainContent').innerHTML = `
