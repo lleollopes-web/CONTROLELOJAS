@@ -431,6 +431,18 @@
       <button class="btn-upload" onclick="openModal()">📂 Importar CSVs</button>
       <button class="btn-primary" onclick="loadFromGitHub()">🔄 Atualizar do GitHub</button>
     </div>
+    <!-- PERÍODO PERSONALIZADO -->
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 0 0;flex-wrap:wrap;">
+      <span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Período:</span>
+      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 12px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+        <span style="font-size:11px;color:var(--muted);font-weight:600;">De</span>
+        <input type="date" id="dateFrom" onchange="applyFilters()" style="border:none;background:transparent;font-family:var(--font-body);font-size:13px;color:var(--text);cursor:pointer;outline:none;">
+        <span style="font-size:11px;color:var(--muted);font-weight:600;">Até</span>
+        <input type="date" id="dateTo" onchange="applyFilters()" style="border:none;background:transparent;font-family:var(--font-body);font-size:13px;color:var(--text);cursor:pointer;outline:none;">
+        <button onclick="resetDateRange()" style="border:none;background:rgba(0,0,0,0.05);cursor:pointer;color:var(--muted);font-size:11px;padding:3px 8px;border-radius:6px;box-shadow:none;font-weight:600;">✕</button>
+      </div>
+      <span id="dateRangeInfo" style="font-size:12px;color:var(--rosa);font-weight:600;display:none;"></span>
+    </div>
   </header>
 
   <!-- STATUS BAR -->
@@ -441,19 +453,6 @@
   </div>
 
   <div id="alertStrip"></div>
-
-  <!-- PERÍODO PERSONALIZADO -->
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-    <span style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Período personalizado:</span>
-    <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:7px 14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-      <span style="font-size:11px;color:var(--muted);font-weight:600;">De</span>
-      <input type="month" id="dateFrom" onchange="applyFilters()" style="border:none;background:transparent;font-family:var(--font-body);font-size:13px;color:var(--text);cursor:pointer;outline:none;min-width:130px;">
-      <span style="font-size:11px;color:var(--muted);font-weight:600;">Até</span>
-      <input type="month" id="dateTo" onchange="applyFilters()" style="border:none;background:transparent;font-family:var(--font-body);font-size:13px;color:var(--text);cursor:pointer;outline:none;min-width:130px;">
-      <button onclick="resetDateRange()" title="Limpar período personalizado" style="border:none;background:rgba(0,0,0,0.05);cursor:pointer;color:var(--muted);font-size:12px;padding:3px 8px;border-radius:6px;box-shadow:none;font-weight:600;">✕ Limpar</button>
-    </div>
-    <span id="dateRangeInfo" style="font-size:12px;color:var(--rosa);font-weight:600;display:none;"></span>
-  </div>
 
   <!-- STORE TABS + GRIFFE FILTER -->
   <div style="margin-bottom:20px;display:flex;flex-wrap:wrap;align-items:center;gap:16px;">
@@ -795,7 +794,8 @@ function getFilteredRows() {
     });
     // Show info
     const info = document.getElementById('dateRangeInfo');
-    if (info) { info.style.display='inline'; info.textContent = `📅 Filtro ativo: ${fromVal||'início'} → ${toVal||'fim'}`; }
+    if (info) { info.style.display='inline'; const fmtD = v => v ? v.split('-').reverse().join('/') : '—';
+      info.textContent = `📅 ${fmtD(fromVal)} → ${fmtD(toVal)}`; }
   } else {
     const info = document.getElementById('dateRangeInfo');
     if (info) info.style.display='none';
