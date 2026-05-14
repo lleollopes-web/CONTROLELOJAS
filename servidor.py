@@ -2,14 +2,21 @@ from flask import Flask, send_from_directory, abort
 import os
 
 app = Flask(__name__)
-
-# O Render roda de /opt/render/project/src/
-# Os arquivos estão em /opt/render/project/src/ também
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def find_html():
+    for name in ['painel.html', 'dashboard.html', 'index.html']:
+        if os.path.exists(os.path.join(BASE_DIR, name)):
+            return name
+    return None
 
 @app.route('/')
 def index():
-    return send_from_directory(BASE_DIR, 'painel.html')
+    html = find_html()
+    if html:
+        return send_from_directory(BASE_DIR, html)
+    files = os.listdir(BASE_DIR)
+    return '<h2>Arquivos encontrados:</h2><ul>' + ''.join(f'<li>{f}</li>' for f in sorted(files)) + '</ul>'
 
 @app.route('/<path:filename>')
 def serve_file(filename):
