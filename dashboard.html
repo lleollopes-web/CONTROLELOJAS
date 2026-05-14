@@ -481,11 +481,7 @@
         <span class="tab-label">Shopping Iguatemi</span>
       </button>
     </div>
-    <div id="griffeWrap" style="display:none;">
-      <select id="griffeSel" onchange="applyFilters()" style="font-size:12px;">
-        <option value="all">Todas as Marcas</option>
-      </select>
-    </div>
+<div id="griffeWrap" style="display:none;"><select id="griffeSel"><option value="all">all</option></select></div>
   </div>
 
   <!-- MAIN CONTENT -->
@@ -634,11 +630,13 @@ function parseBR(v) {
 }
 function parseDate(s) {
   if (!s) return null;
-  const [d,m,y] = String(s).trim().split('/');
-  if (!y) return null;
-  // Corrige ano com 2 dígitos: 26 → 2026, 25 → 2025
-  const fullYear = y.length === 2 ? 2000 + (+y) : +y;
-  return new Date(fullYear, +m-1, +d);
+  const parts = String(s).trim().split('/');
+  if (parts.length < 3) return null;
+  const d = +parts[0], m = +parts[1];
+  const yRaw = parts[2].split(' ')[0]; // remove time if present
+  const fullYear = yRaw.length <= 2 ? 2000 + (+yRaw) : +yRaw;
+  if (isNaN(d) || isNaN(m) || isNaN(fullYear)) return null;
+  return new Date(fullYear, m-1, d);
 }
 const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const MONTHS_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -902,15 +900,8 @@ function switchStore(store, el) {
   activeStore = store;
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
-  // Show griffe filter only for Calzedonia (store 2) or all
-  const griffeWrap = document.getElementById('griffeWrap');
-  if (store === 2 || store === 'all') {
-    griffeWrap.style.display = 'block';
-    populateGriffeFilter();
-  } else {
-    griffeWrap.style.display = 'none';
-    document.getElementById('griffeSel').value = 'all';
-  }
+  // Griffe filter hidden always
+  document.getElementById('griffeSel').value = 'all';
   applyFilters();
 }
 
