@@ -20,8 +20,8 @@
     --bg3:     #F0EEF8;
     --card:    #FFFFFF;
     --border:  rgba(0,0,0,0.08);
-    --text:    #1A1A2E;
-    --muted:   rgba(26,26,46,0.5);
+    --text:    #0A0A0A;
+    --muted:   rgba(0,0,0,0.5);
     --font-display: 'Playfair Display', serif;
     --font-body:    'DM Sans', sans-serif;
   }
@@ -63,7 +63,7 @@
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     letter-spacing: -0.5px;
   }
-  .brand p { color: var(--muted); font-size: 13px; margin-top: 3px; letter-spacing: 1px; text-transform: uppercase; }
+  .brand p { color:rgba(0,0,0,0.55); font-size: 13px; margin-top: 3px; letter-spacing: 1px; text-transform: uppercase; }
 
   .header-right { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 
@@ -111,7 +111,7 @@
   .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
   .status-dot.active { background: var(--verde); box-shadow: 0 0 8px var(--verde); animation: pulse 2s infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-  .status-text { color: var(--muted); }
+  .status-text { color:rgba(0,0,0,0.55); }
   .status-sep { color: var(--border); }
   .store-badge {
     padding: 3px 10px; border-radius: 20px; font-weight: 600; font-size: 11px;
@@ -135,7 +135,7 @@
     font-size: 20px; font-weight: 700;
     margin: 36px 0 16px;
     display: flex; align-items: center; gap: 10px;
-    color: var(--text);
+    color: #000;
   }
   .section-title::after { content: ''; flex: 1; height: 1px; background: rgba(0,0,0,0.1); }
 
@@ -165,10 +165,10 @@
   .kpi-card.k3::before { background: linear-gradient(90deg, var(--amber), var(--coral)); }
   .kpi-card.k4::before { background: linear-gradient(90deg, var(--cyan), var(--verde)); }
   .kpi-card.k5::before { background: linear-gradient(90deg, var(--coral), var(--rosa)); }
-  .kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 8px; }
+  .kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color:rgba(0,0,0,0.55); margin-bottom: 8px; }
   .kpi-value { font-family: var(--font-display); font-size: 28px; font-weight: 700; line-height: 1; }
-  .kpi-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
-  .kpi-icon { position: absolute; right: 18px; top: 18px; font-size: 22px; opacity: .18; }
+  .kpi-sub { font-size: 12px; color:rgba(0,0,0,0.55); margin-top: 6px; }
+  .kpi-icon { position: absolute; right: 18px; top: 18px; font-size: 26px; opacity: .55; filter: saturate(2); }
 
   @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
 
@@ -190,7 +190,7 @@
     animation: fadeUp .5s both;
     box-shadow: 0 2px 12px rgba(0,0,0,0.06);
   }
-  .chart-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 18px; }
+  .chart-title { font-size: 13px; font-weight: 600; color:rgba(0,0,0,0.55); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 18px; }
   .chart-wrap { position: relative; }
 
   /* ── TABLE ── */
@@ -210,7 +210,7 @@
     background: #f8f8fc; border: 1px solid var(--border);
     border-radius: 12px; padding: 16px 18px;
   }
-  .comp-kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 6px; }
+  .comp-kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color:rgba(0,0,0,0.55); margin-bottom: 6px; }
   .comp-kpi-vals { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
   .comp-a { font-size: 16px; font-weight: 700; color: var(--rosa); }
   .comp-b { font-size: 16px; font-weight: 700; color: var(--cyan); }
@@ -222,13 +222,13 @@
     padding: 18px 22px; border-bottom: 1px solid var(--border);
     flex-wrap: wrap; gap: 10px;
   }
-  .table-header h3 { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+  .table-header h3 { font-size: 13px; font-weight: 600; color:rgba(0,0,0,0.55); text-transform: uppercase; letter-spacing: .8px; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  thead { background: rgba(255,255,255,0.03); }
-  th { padding: 12px 16px; text-align: left; color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .8px; }
-  td { padding: 11px 16px; border-top: 1px solid var(--border); }
+  thead { background: #f5f5f7; }
+  th { padding: 12px 16px; text-align: left; color:rgba(0,0,0,0.55); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .8px; }
+  td { padding: 11px 16px; border-top: 1px solid var(--border); color: #111; }
   tr:hover td { background: rgba(255,255,255,0.025); }
-  .rank { color: var(--muted); font-size: 12px; }
+  .rank { color:rgba(0,0,0,0.55); font-size: 12px; }
   .pill {
     display: inline-block; padding: 3px 10px; border-radius: 20px;
     font-size: 11px; font-weight: 600;
@@ -247,7 +247,7 @@
   .tab {
     padding: 10px 14px; border-radius: 14px; font-size: 13px; font-weight: 500;
     cursor: pointer; border: 2px solid var(--border);
-    background: #fff; color: var(--muted);
+    background: #fff; color:rgba(0,0,0,0.55);
     transition: all .2s; display:flex; flex-direction:column; align-items:center; justify-content:center;
     gap: 6px; min-height: 80px; min-width: 120px;
   }
@@ -294,9 +294,9 @@
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     line-height: 1.2; margin-bottom: 6px;
   }
-  .login-logo p { color: var(--muted); font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+  .login-logo p { color:rgba(0,0,0,0.55); font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
   .login-field { margin-bottom: 16px; }
-  .login-field label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 8px; }
+  .login-field label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color:rgba(0,0,0,0.55); margin-bottom: 8px; }
   .login-field input {
     width: 100%; padding: 12px 16px;
     background: var(--bg2); border: 1px solid var(--border);
@@ -306,7 +306,7 @@
     outline: none;
   }
   .login-field input:focus { border-color: var(--rosa); box-shadow: 0 0 0 3px rgba(233,30,140,0.12); }
-  .login-field input::placeholder { color: var(--muted); }
+  .login-field input::placeholder { color:rgba(0,0,0,0.55); }
   .login-btn {
     width: 100%; padding: 13px;
     background: linear-gradient(135deg, var(--rosa), var(--coral));
@@ -328,14 +328,14 @@
   @keyframes shake {
     0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)}
   }
-  .login-footer { text-align: center; margin-top: 24px; color: var(--muted); font-size: 11px; }
+  .login-footer { text-align: center; margin-top: 24px; color:rgba(0,0,0,0.55); font-size: 11px; }
   .show-pass {
     position: relative;
   }
   .show-pass input { padding-right: 44px; }
   .show-pass-btn {
     position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-    background: none; border: none; color: var(--muted); cursor: pointer;
+    background: none; border: none; color:rgba(0,0,0,0.55); cursor: pointer;
     font-size: 16px; padding: 4px; transition: color .2s;
   }
   .show-pass-btn:hover { color: var(--text); }
@@ -351,7 +351,7 @@
     box-shadow: 0 24px 80px rgba(0,0,0,0.6);
   }
   .modal h2 { font-family: var(--font-display); font-size: 22px; margin-bottom: 8px; }
-  .modal p { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+  .modal p { color:rgba(0,0,0,0.55); font-size: 13px; margin-bottom: 24px; }
   .file-list { display: flex; flex-direction: column; gap: 12px; }
   .file-item {
     background: var(--card); border: 1px dashed var(--border);
@@ -363,9 +363,9 @@
   .file-item input { display: none; }
   .file-item-label { flex: 1; }
   .file-item-label strong { display: block; font-size: 13px; }
-  .file-item-label span { font-size: 11px; color: var(--muted); }
+  .file-item-label span { font-size: 11px; color:rgba(0,0,0,0.55); }
   .file-item-status { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; }
-  .f-waiting { background: rgba(255,255,255,0.05); color: var(--muted); }
+  .f-waiting { background: rgba(255,255,255,0.05); color:rgba(0,0,0,0.55); }
   .f-loaded  { background: rgba(6,214,160,0.15); color: var(--verde); }
   .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
 
@@ -374,9 +374,9 @@
     text-align: center; padding: 80px 20px;
     display: flex; flex-direction: column; align-items: center; gap: 16px;
   }
-  .empty-icon { font-size: 48px; opacity: .3; }
-  .empty h3 { font-family: var(--font-display); font-size: 22px; color: var(--muted); }
-  .empty p { color: var(--muted); font-size: 13px; max-width: 340px; }
+  .empty-icon { font-size: 52px; opacity: .7; filter: saturate(2); }
+  .empty h3 { font-family: var(--font-display); font-size: 22px; color:rgba(0,0,0,0.55); }
+  .empty p { color:rgba(0,0,0,0.55); font-size: 13px; max-width: 340px; }
 
   /* ── LOADER ── */
   .loader { display: flex; justify-content: center; padding: 40px; }
@@ -450,14 +450,14 @@
     </div>
     <!-- PERÍODO PERSONALIZADO -->
     <div style="display:flex;align-items:center;gap:8px;padding:10px 0 0;flex-wrap:wrap;">
-      <span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Período:</span>
+      <span style="font-size:11px;font-weight:600;color:rgba(0,0,0,0.55);text-transform:uppercase;letter-spacing:.5px;">Período:</span>
       <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 12px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-        <span style="font-size:11px;color:var(--muted);font-weight:600;">De</span>
+        <span style="font-size:11px;color:rgba(0,0,0,0.55);font-weight:600;">De</span>
         <input type="date" id="dateFrom" style="border:none;background:transparent;font-family:var(--font-body);font-size:13px;color:var(--text);cursor:pointer;outline:none;">
-        <span style="font-size:11px;color:var(--muted);font-weight:600;">Até</span>
+        <span style="font-size:11px;color:rgba(0,0,0,0.55);font-weight:600;">Até</span>
         <input type="date" id="dateTo" style="border:none;background:transparent;font-family:var(--font-body);font-size:13px;color:var(--text);cursor:pointer;outline:none;">
         <button onclick="applyDateRange()" style="border:none;background:linear-gradient(135deg,var(--rosa),var(--coral));cursor:pointer;color:#fff;font-size:12px;padding:5px 14px;border-radius:8px;box-shadow:none;font-weight:700;letter-spacing:.3px;">✔ OK</button>
-        <button onclick="resetDateRange()" style="border:none;background:rgba(0,0,0,0.05);cursor:pointer;color:var(--muted);font-size:11px;padding:5px 10px;border-radius:8px;box-shadow:none;font-weight:600;">✕</button>
+        <button onclick="resetDateRange()" style="border:none;background:rgba(0,0,0,0.05);cursor:pointer;color:rgba(0,0,0,0.55);font-size:11px;padding:5px 10px;border-radius:8px;box-shadow:none;font-weight:600;">✕</button>
       </div>
       <span id="dateRangeInfo" style="font-size:12px;color:var(--rosa);font-weight:600;display:none;"></span>
     </div>
@@ -519,7 +519,7 @@
     <h2>📂 Importar Arquivos CSV</h2>
     <p>Selecione os arquivos CSV de cada loja. Eles devem seguir a mesma estrutura (colunas: DATA_VENDA, DESC_PRODUTO, QTDE_LIQUIDA, VALOR_LIQUIDO_VENDA…)</p>
     <div class="file-list" id="fileList"></div>
-    <div style="margin-top:20px;padding:14px;background:var(--bg);border-radius:10px;font-size:12px;color:var(--muted);">
+    <div style="margin-top:20px;padding:14px;background:var(--bg);border-radius:10px;font-size:12px;color:rgba(0,0,0,0.55);">
       💡 <strong style="color:var(--text);">Dica GitHub:</strong> Configure a URL base dos seus CSVs no código (variável <code style="color:var(--rosa2);">GITHUB_BASE_URL</code>) para carregar automaticamente.
     </div>
     <div class="modal-actions">
@@ -1111,7 +1111,7 @@ function renderDashboard(rows) {
           ${topProd.map(([p,v],i)=>`
             <tr>
               <td class="rank">${i+1}</td>
-              <td style="font-family:monospace;font-size:12px;color:var(--muted)">${v.cod||'—'}</td>
+              <td style="font-family:monospace;font-size:12px;color:rgba(0,0,0,0.55)">${v.cod||'—'}</td>
               <td><span class="pill pill-amber" style="font-size:10px;">${v.cor||'—'}</span></td>
               <td>${p}</td>
               <td><strong>${fmtN(v.qtde)}</strong></td>
@@ -1138,7 +1138,7 @@ function renderDashboard(rows) {
               <tr>
                 ${i===0 ? `<td rowspan="${items.length}" style="font-weight:600;font-size:12px;vertical-align:top;padding-top:14px;color:var(--rosa);border-right:2px solid var(--border);">${sub}</td>` : ''}
                 <td class="rank">${i+1}</td>
-                <td style="font-family:monospace;font-size:11px;color:var(--muted)">${v.cod||'—'}</td>
+                <td style="font-family:monospace;font-size:11px;color:rgba(0,0,0,0.55)">${v.cod||'—'}</td>
                 <td><span class="pill pill-amber" style="font-size:10px;">${v.cor||'—'}</span></td>
                 <td style="font-size:13px;">${v.desc}</td>
                 <td><strong>${fmtN(v.qtde)}</strong></td>
@@ -1158,7 +1158,7 @@ function renderDashboard(rows) {
           <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--rosa);display:block;margin-bottom:6px;">◼ Período A</label>
           <div style="display:flex;gap:6px;align-items:center;">
             <input type="date" id="compFromA" style="border:1px solid var(--border);background:#fff;border-radius:8px;padding:6px 10px;font-family:var(--font-body);font-size:13px;color:var(--text);">
-            <span style="color:var(--muted);font-size:12px;">até</span>
+            <span style="color:rgba(0,0,0,0.55);font-size:12px;">até</span>
             <input type="date" id="compToA" style="border:1px solid var(--border);background:#fff;border-radius:8px;padding:6px 10px;font-family:var(--font-body);font-size:13px;color:var(--text);">
           </div>
         </div>
@@ -1167,13 +1167,13 @@ function renderDashboard(rows) {
           <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--cyan);display:block;margin-bottom:6px;">◼ Período B</label>
           <div style="display:flex;gap:6px;align-items:center;">
             <input type="date" id="compFromB" style="border:1px solid var(--border);background:#fff;border-radius:8px;padding:6px 10px;font-family:var(--font-body);font-size:13px;color:var(--text);">
-            <span style="color:var(--muted);font-size:12px;">até</span>
+            <span style="color:rgba(0,0,0,0.55);font-size:12px;">até</span>
             <input type="date" id="compToB" style="border:1px solid var(--border);background:#fff;border-radius:8px;padding:6px 10px;font-family:var(--font-body);font-size:13px;color:var(--text);">
           </div>
         </div>
         <!-- Checkboxes -->
         <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:2px;">Métricas</label>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(0,0,0,0.55);display:block;margin-bottom:2px;">Métricas</label>
           <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="chkFat" checked onchange="renderComp()"> Faturamento</label>
           <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="chkQtde" checked onchange="renderComp()"> Peças Vendidas</label>
           <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="chkTicket" onchange="renderComp()"> Ticket Médio</label>
@@ -1186,12 +1186,12 @@ function renderDashboard(rows) {
         <div id="compKpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px;"></div>
         <!-- Bar chart -->
         <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-          <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;">Comparativo Visual</div>
+          <div style="font-size:12px;font-weight:600;color:rgba(0,0,0,0.55);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;">Comparativo Visual</div>
           <div style="height:280px;"><canvas id="cComp"></canvas></div>
         </div>
         <!-- Growth rate -->
         <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-top:14px;">
-          <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;">Taxa de Crescimento por Mês (Faturamento)</div>
+          <div style="font-size:12px;font-weight:600;color:rgba(0,0,0,0.55);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;">Taxa de Crescimento por Mês (Faturamento)</div>
           <div style="height:220px;"><canvas id="cGrowth"></canvas></div>
         </div>
       </div>
@@ -1395,7 +1395,7 @@ function renderComp() {
       <div class="comp-kpi-label">${m.label}</div>
       <div class="comp-kpi-vals">
         <span class="comp-a">${m.fmtA}</span>
-        <span style="color:var(--muted);font-size:12px;">→</span>
+        <span style="color:rgba(0,0,0,0.55);font-size:12px;">→</span>
         <span class="comp-b">${m.fmtB}</span>
         ${pctHtml(m.a, m.b)}
       </div>
