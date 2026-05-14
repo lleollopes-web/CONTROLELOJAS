@@ -416,7 +416,7 @@
     <div class="header-right">
       <select id="yearSel" onchange="applyFilters()">
         <option value="all">Todos os Anos</option>
-        <option value="2025" selected>2025</option>
+        <option value="2025">2025</option>
         <option value="2026">2026</option>
       </select>
       <select id="monthSel" onchange="applyFilters()">
@@ -441,6 +441,19 @@
   </div>
 
   <div id="alertStrip"></div>
+
+  <!-- PERÍODO PERSONALIZADO -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+    <span style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Período personalizado:</span>
+    <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:7px 14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+      <span style="font-size:11px;color:var(--muted);font-weight:600;">De</span>
+      <input type="month" id="dateFrom" onchange="applyFilters()" style="border:none;background:transparent;font-family:var(--font-body);font-size:13px;color:var(--text);cursor:pointer;outline:none;min-width:130px;">
+      <span style="font-size:11px;color:var(--muted);font-weight:600;">Até</span>
+      <input type="month" id="dateTo" onchange="applyFilters()" style="border:none;background:transparent;font-family:var(--font-body);font-size:13px;color:var(--text);cursor:pointer;outline:none;min-width:130px;">
+      <button onclick="resetDateRange()" title="Limpar período personalizado" style="border:none;background:rgba(0,0,0,0.05);cursor:pointer;color:var(--muted);font-size:12px;padding:3px 8px;border-radius:6px;box-shadow:none;font-weight:600;">✕ Limpar</button>
+    </div>
+    <span id="dateRangeInfo" style="font-size:12px;color:var(--rosa);font-weight:600;display:none;"></span>
+  </div>
 
   <!-- STORE TABS + GRIFFE FILTER -->
   <div style="margin-bottom:20px;display:flex;flex-wrap:wrap;align-items:center;gap:16px;">
@@ -742,10 +755,16 @@ function populateGriffeFilter() {
 
 /* ── FILTER ── */
 function getFilteredRows() {
-  const yr   = document.getElementById('yearSel').value;
-  const mnth = document.getElementById('monthSel').value;
+  const yr     = document.getElementById('yearSel').value;
+  const mnth   = document.getElementById('monthSel').value;
   const griffe = document.getElementById('griffeSel')?.value || 'all';
   const storeFilter = activeStore === 'all' ? [0,1,2] : [+activeStore];
+
+  const fromVal = document.getElementById('dateFrom')?.value;
+  const toVal   = document.getElementById('dateTo')?.value;
+  let fromDate = fromVal ? new Date(fromVal + '-01') : null;
+  let toDate   = toVal   ? new Date(toVal   + '-01') : null;
+  if (toDate) toDate = new Date(toDate.getFullYear(), toDate.getMonth()+1, 0);
 
   const years = yr === 'all' ? [2025,2026] : [+yr];
   let rows = [];
@@ -756,17 +775,47 @@ function getFilteredRows() {
       rows = rows.concat(d);
     }
   }
+
+  // Dropdown month filter
   if (mnth !== 'all') {
     rows = rows.filter(r => {
       const dt = parseDate(r.DATA_VENDA);
       return dt && (dt.getMonth()+1) === +mnth;
     });
   }
-  // Apply griffe filter (only relevant for Calzedonia store or when all stores)
+
+  // Custom date range filter (overrides if set)
+  if (fromDate || toDate) {
+    rows = rows.filter(r => {
+      const dt = parseDate(r.DATA_VENDA);
+      if (!dt) return false;
+      if (fromDate && dt < fromDate) return false;
+      if (toDate   && dt > toDate)   return false;
+      return true;
+    });
+    // Show info
+    const info = document.getElementById('dateRangeInfo');
+    if (info) { info.style.display='inline'; info.textContent = `📅 Filtro ativo: ${fromVal||'início'} → ${toVal||'fim'}`; }
+  } else {
+    const info = document.getElementById('dateRangeInfo');
+    if (info) info.style.display='none';
+  }
+
   if (griffe !== 'all') {
     rows = rows.filter(r => (r.GRIFFE||'').trim() === griffe);
   }
   return rows;
+}
+
+function resetDateRange() {
+  document.getElementById('dateFrom').value = '';
+  document.getElementById('dateTo').value = '';
+  applyFilters();
+}
+
+// Initialize date range to full available range after load
+function initDateRange() {
+  // Default: show all data (empty = no filter)
 }
 
 function applyFilters() {
@@ -860,6 +909,14 @@ function renderDashboard(rows) {
     byCat[c]+=parseBR(r.VALOR_LIQUIDO_VENDA);
   });
 
+  // By subgrupo (for chart)
+  const bySubGrupoChart = {};
+  rows.forEach(r=>{
+    const sg=(r.SUBGRUPO_PRODUTO||'').trim(); if(!sg||sg==='NO SAP') return;
+    if(!bySubGrupoChart[sg]) bySubGrupoChart[sg]=0;
+    bySubGrupoChart[sg]+=parseBR(r.VALOR_LIQUIDO_VENDA);
+  });
+
   // Top 5 por Subgrupo
   const bySubGrupo = {};
   rows.forEach(r=>{
@@ -949,6 +1006,12 @@ function renderDashboard(rows) {
         <div class="chart-title">Mix por Público</div>
         <div class="chart-wrap" style="height:260px;"><canvas id="cCat"></canvas></div>
       </div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card d2" style="grid-column:1/-1;">
+        <div class="chart-title">Mix por Subgrupo de Produto (Faturamento)</div>
+        <div class="chart-wrap" style="height:300px;"><canvas id="cSubGrupo"></canvas></div>
+      </div>
       ${storeComparisonHtml}
     </div>
 
@@ -960,15 +1023,15 @@ function renderDashboard(rows) {
       </div>
       <table>
         <thead><tr>
-          <th>#</th><th>Código</th><th>Produto</th><th>Cor</th><th>Qtde</th><th>Faturamento</th><th>% do Total</th>
+          <th>#</th><th>Código</th><th>Cor</th><th>Produto</th><th>Qtde</th><th>Faturamento</th><th>% do Total</th>
         </tr></thead>
         <tbody>
           ${topProd.map(([p,v],i)=>`
             <tr>
               <td class="rank">${i+1}</td>
               <td style="font-family:monospace;font-size:12px;color:var(--muted)">${v.cod||'—'}</td>
-              <td>${p}</td>
               <td><span class="pill pill-amber" style="font-size:10px;">${v.cor||'—'}</span></td>
+              <td>${p}</td>
               <td><strong>${fmtN(v.qtde)}</strong></td>
               <td>${fmtBRL(v.val)}</td>
               <td><span class="pill ${i<3?'pill-rosa':'pill-verde'}">${faturamento?((v.val/faturamento)*100).toFixed(1)+'%':'—'}</span></td>
@@ -985,7 +1048,7 @@ function renderDashboard(rows) {
       </div>
       <table>
         <thead><tr>
-          <th>Subgrupo</th><th>#</th><th>Código</th><th>Produto</th><th>Cor</th><th>Qtde</th><th>Faturamento</th>
+          <th>Subgrupo</th><th>#</th><th>Código</th><th>Cor</th><th>Produto</th><th>Qtde</th><th>Faturamento</th>
         </tr></thead>
         <tbody>
           ${topBySubgrupo.map(({sub,items})=>
@@ -994,8 +1057,8 @@ function renderDashboard(rows) {
                 ${i===0 ? `<td rowspan="${items.length}" style="font-weight:600;font-size:12px;vertical-align:top;padding-top:14px;color:var(--rosa);border-right:2px solid var(--border);">${sub}</td>` : ''}
                 <td class="rank">${i+1}</td>
                 <td style="font-family:monospace;font-size:11px;color:var(--muted)">${v.cod||'—'}</td>
-                <td style="font-size:13px;">${v.desc}</td>
                 <td><span class="pill pill-amber" style="font-size:10px;">${v.cor||'—'}</span></td>
+                <td style="font-size:13px;">${v.desc}</td>
                 <td><strong>${fmtN(v.qtde)}</strong></td>
                 <td>${fmtBRL(v.val)}</td>
               </tr>`).join('')
@@ -1093,6 +1156,27 @@ function renderDashboard(rows) {
       type:'doughnut',
       data:{labels:catKeys,datasets:[{data:catKeys.map(k=>byCat[k]),backgroundColor:['#E91E8C','#00D4FF','#FFB627'],borderWidth:0,hoverOffset:6}]},
       options:{...doughnutOpts(), plugins:{...doughnutOpts().plugins, legend:{position:'right',labels:{color:'rgba(26,26,46,0.65)',font:{family:'DM Sans',size:11},boxWidth:12}}}}
+    });
+  }
+
+  // ── CHART: SubGrupo ──
+  const cSubGrupoCtx = document.getElementById('cSubGrupo');
+  if (cSubGrupoCtx) {
+    const sgKeys = Object.entries(bySubGrupoChart).sort((a,b)=>b[1]-a[1]);
+    const PALETTE2 = ['#E91E8C','#00D4FF','#FFB627','#06D6A0','#FF4D6D','#7B61FF','#FF6BBE','#00B4D8','#F77F00','#4CC9F0','#43AA8B','#F94144','#90BE6D','#577590','#F3722C'];
+    charts.subgrupo = new Chart(cSubGrupoCtx, {
+      type:'doughnut',
+      data:{
+        labels: sgKeys.map(([k])=>k),
+        datasets:[{data:sgKeys.map(([,v])=>v), backgroundColor:PALETTE2.slice(0,sgKeys.length), borderWidth:2, borderColor:'#fff', hoverOffset:8}]
+      },
+      options:{
+        ...doughnutOpts(),
+        plugins:{
+          ...doughnutOpts().plugins,
+          legend:{position:'right',labels:{color:'rgba(26,26,46,0.65)',font:{family:'DM Sans',size:10},boxWidth:10,padding:6}}
+        }
+      }
     });
   }
 
