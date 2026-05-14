@@ -431,12 +431,12 @@
       <p>Acompanhamento de Vendas · 3 Lojas</p>
     </div>
     <div class="header-right">
-      <select id="yearSel" onchange="applyFilters()">
+      <select id="yearSel" onchange="onDropdownChange()">
         <option value="all">Todos os Anos</option>
         <option value="2025">2025</option>
         <option value="2026">2026</option>
       </select>
-      <select id="monthSel" onchange="applyFilters()">
+      <select id="monthSel" onchange="onDropdownChange()">
         <option value="all">Todos os Meses</option>
         <option value="1">Janeiro</option><option value="2">Fevereiro</option>
         <option value="3">Março</option><option value="4">Abril</option>
@@ -790,65 +790,73 @@ function populateGriffeFilter() {
 
 /* ── FILTER ── */
 function getFilteredRows() {
-  const yr     = document.getElementById('yearSel').value;
-  const mnth   = document.getElementById('monthSel').value;
-  const griffe = document.getElementById('griffeSel')?.value || 'all';
   const storeFilter = activeStore === 'all' ? [0,1,2] : [+activeStore];
+  const yr   = document.getElementById('yearSel').value;
+  const mnth = document.getElementById('monthSel').value;
+  const fromVal = (document.getElementById('dateFrom')?.value || '').trim();
+  const toVal   = (document.getElementById('dateTo')?.value   || '').trim();
+  const useRange = fromVal !== '' || toVal !== '';
 
-  const fromVal = document.getElementById('dateFrom')?.value;
-  const toVal   = document.getElementById('dateTo')?.value;
-  let fromDate = fromVal ? new Date(fromVal + '-01') : null;
-  let toDate   = toVal   ? new Date(toVal   + '-01') : null;
-  if (toDate) toDate = new Date(toDate.getFullYear(), toDate.getMonth()+1, 0);
+  // Parse range dates to timestamps
+  let fromTS = 0, toTS = Infinity;
+  if (fromVal) {
+    const [fy,fm,fd] = fromVal.split('-').map(Number);
+    fromTS = new Date(fy, fm-1, fd, 0, 0, 0).getTime();
+  }
+  if (toVal) {
+    const [ty,tm,td] = toVal.split('-').map(Number);
+    toTS = new Date(ty, tm-1, td, 23, 59, 59).getTime();
+  }
 
-  const years = yr === 'all' ? [2025,2026] : [+yr];
+  // Collect all rows from relevant stores/years
   let rows = [];
   for (const si of storeFilter) {
-    for (const y of years) {
+    for (const y of [2025, 2026]) {
       const d = rawData[si+'_'+y] || [];
       d.forEach(r => { r._storeIdx = si; r._year = y; });
       rows = rows.concat(d);
     }
   }
 
-  // Dropdown month filter
-  if (mnth !== 'all') {
-    rows = rows.filter(r => {
-      const dt = parseDate(r.DATA_VENDA);
-      return dt && (dt.getMonth()+1) === +mnth;
-    });
-  }
-
-  // Custom date range filter (overrides if set)
-  if (fromDate || toDate) {
+  if (useRange) {
+    // Date range mode: filter by exact dates, ignore dropdowns
     rows = rows.filter(r => {
       const dt = parseDate(r.DATA_VENDA);
       if (!dt) return false;
-      if (fromDate && dt < fromDate) return false;
-      if (toDate   && dt > toDate)   return false;
-      return true;
+      const ts = dt.getTime();
+      return ts >= fromTS && ts <= toTS;
     });
-    // Show info
-    const info = document.getElementById('dateRangeInfo');
-    if (info) { info.style.display='inline'; const fmtD = v => v ? v.split('-').reverse().join('/') : '—';
-      info.textContent = `📅 ${fmtD(fromVal)} → ${fmtD(toVal)}`; }
   } else {
-    const info = document.getElementById('dateRangeInfo');
-    if (info) info.style.display='none';
+    // Dropdown mode: filter by year then month
+    if (yr !== 'all') {
+      rows = rows.filter(r => {
+        const dt = parseDate(r.DATA_VENDA);
+        return dt && dt.getFullYear() === +yr;
+      });
+    }
+    if (mnth !== 'all') {
+      rows = rows.filter(r => {
+        const dt = parseDate(r.DATA_VENDA);
+        return dt && (dt.getMonth() + 1) === +mnth;
+      });
+    }
   }
 
+  // Griffe filter
+  const griffe = document.getElementById('griffeSel')?.value || 'all';
   if (griffe !== 'all') {
     rows = rows.filter(r => (r.GRIFFE||'').trim() === griffe);
   }
+
   return rows;
 }
+
 
 function resetDateRange() {
   document.getElementById('dateFrom').value = '';
   document.getElementById('dateTo').value = '';
   const info = document.getElementById('dateRangeInfo');
   if (info) info.style.display = 'none';
-  // Re-enable dropdowns
   const yr = document.getElementById('yearSel');
   const mn = document.getElementById('monthSel');
   yr.disabled = false; yr.style.opacity = '1';
@@ -860,6 +868,19 @@ function resetDateRange() {
 // Initialize date range to full available range after load
 function initDateRange() {
   // Default: show all data (empty = no filter)
+}
+
+function onDropdownChange() {
+  // When using dropdowns, clear date range
+  document.getElementById('dateFrom').value = '';
+  document.getElementById('dateTo').value = '';
+  const yr = document.getElementById('yearSel');
+  const mn = document.getElementById('monthSel');
+  yr.disabled = false; yr.style.opacity = '1';
+  mn.disabled = false; mn.style.opacity = '1';
+  const info = document.getElementById('dateRangeInfo');
+  if (info) info.style.display = 'none';
+  if (Object.keys(rawData).length) applyFilters();
 }
 
 function applyDateRange() {
