@@ -436,9 +436,9 @@
       <span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Período:</span>
       <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 12px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
         <span style="font-size:11px;color:var(--muted);font-weight:600;">De</span>
-        <input type="date" id="dateFrom" onchange="applyFilters()" style="border:none;background:transparent;font-family:var(--font-body);font-size:13px;color:var(--text);cursor:pointer;outline:none;">
+        <input type="date" id="dateFrom" onchange="onDateChange()" style="border:none;background:transparent;font-family:var(--font-body);font-size:13px;color:var(--text);cursor:pointer;outline:none;">
         <span style="font-size:11px;color:var(--muted);font-weight:600;">Até</span>
-        <input type="date" id="dateTo" onchange="applyFilters()" style="border:none;background:transparent;font-family:var(--font-body);font-size:13px;color:var(--text);cursor:pointer;outline:none;">
+        <input type="date" id="dateTo" onchange="onDateChange()" style="border:none;background:transparent;font-family:var(--font-body);font-size:13px;color:var(--text);cursor:pointer;outline:none;">
         <button onclick="resetDateRange()" style="border:none;background:rgba(0,0,0,0.05);cursor:pointer;color:var(--muted);font-size:11px;padding:3px 8px;border-radius:6px;box-shadow:none;font-weight:600;">✕</button>
       </div>
       <span id="dateRangeInfo" style="font-size:12px;color:var(--rosa);font-weight:600;display:none;"></span>
@@ -583,8 +583,13 @@ async function autoLoadGitHub() {
       } catch { errors++; }
     }
   }
-  if (loaded) { applyFilters(); updateStatus(); }
-  else { setStatus('error', '⚠️ Não foi possível carregar do GitHub.'); }
+  if (loaded) {
+    updateStatus();
+    // Small delay to ensure DOM is ready, then apply with any active date filter
+    setTimeout(() => applyFilters(), 100);
+  } else {
+    setStatus('error', '⚠️ Não foi possível carregar do GitHub.');
+  }
 }
 const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/lleollopes-web/CONTROLELOJAS/main/';
 
@@ -816,6 +821,21 @@ function resetDateRange() {
 // Initialize date range to full available range after load
 function initDateRange() {
   // Default: show all data (empty = no filter)
+}
+
+function onDateChange() {
+  // Update info label immediately
+  const fromVal = document.getElementById('dateFrom')?.value;
+  const toVal   = document.getElementById('dateTo')?.value;
+  const info = document.getElementById('dateRangeInfo');
+  if (fromVal || toVal) {
+    const fmtD = v => v ? v.split('-').reverse().join('/') : '—';
+    if (info) { info.style.display='inline'; info.textContent = `📅 ${fmtD(fromVal)} → ${fmtD(toVal)}`; }
+  } else {
+    if (info) info.style.display = 'none';
+  }
+  // Only apply if data is loaded
+  if (Object.keys(rawData).length) applyFilters();
 }
 
 function applyFilters() {
