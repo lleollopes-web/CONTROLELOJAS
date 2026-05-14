@@ -824,6 +824,12 @@ function resetDateRange() {
   document.getElementById('dateTo').value = '';
   const info = document.getElementById('dateRangeInfo');
   if (info) info.style.display = 'none';
+  // Re-enable dropdowns
+  const yr = document.getElementById('yearSel');
+  const mn = document.getElementById('monthSel');
+  yr.disabled = false; yr.style.opacity = '1';
+  mn.disabled = false; mn.style.opacity = '1';
+  yr.value = 'all'; mn.value = 'all';
   if (Object.keys(rawData).length) applyFilters();
 }
 
@@ -837,10 +843,21 @@ function applyDateRange() {
   const toVal   = document.getElementById('dateTo')?.value;
   const info = document.getElementById('dateRangeInfo');
   const fmtD = v => v ? v.split('-').reverse().join('/') : '—';
+
   if (fromVal || toVal) {
     if (info) { info.style.display='inline'; info.textContent = `📅 ${fmtD(fromVal)} → ${fmtD(toVal)}`; }
+    // Disable and reset dropdowns
+    const yr = document.getElementById('yearSel');
+    const mn = document.getElementById('monthSel');
+    yr.value = 'all'; yr.disabled = true; yr.style.opacity = '0.4';
+    mn.value = 'all'; mn.disabled = true; mn.style.opacity = '0.4';
   } else {
     if (info) info.style.display = 'none';
+    // Re-enable dropdowns
+    const yr = document.getElementById('yearSel');
+    const mn = document.getElementById('monthSel');
+    yr.disabled = false; yr.style.opacity = '1';
+    mn.disabled = false; mn.style.opacity = '1';
   }
   if (!Object.keys(rawData).length) {
     showAlert('Aguarde os dados carregarem antes de filtrar.');
@@ -855,11 +872,25 @@ function applyFilters() {
 
   const rows = getFilteredRows();
   if (!rows.length) {
+    // Find available date range in loaded data
+    let minDate = null, maxDate = null;
+    Object.values(rawData).forEach(rows => {
+      rows.forEach(r => {
+        const dt = parseDate(r.DATA_VENDA);
+        if (!dt) return;
+        if (!minDate || dt < minDate) minDate = dt;
+        if (!maxDate || dt > maxDate) maxDate = dt;
+      });
+    });
+    const fmtDate = d => d ? d.toLocaleDateString('pt-BR') : '—';
+    const rangeMsg = minDate ? `<p style="color:var(--verde);font-weight:600;margin-top:8px;">📅 Dados disponíveis: ${fmtDate(minDate)} até ${fmtDate(maxDate)}</p>` : '';
     document.getElementById('mainContent').innerHTML = `
       <div class="empty">
         <div class="empty-icon">📭</div>
         <h3>Nenhum dado para este filtro</h3>
-        <p>Tente outro período ou importe mais arquivos CSV.</p>
+        <p>O período selecionado não contém registros.</p>
+        ${rangeMsg}
+        <button class="btn-primary" style="margin-top:16px;" onclick="resetDateRange()">🔄 Ver todos os dados</button>
       </div>`;
     return;
   }
