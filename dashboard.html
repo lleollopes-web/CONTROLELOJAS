@@ -859,10 +859,11 @@ function resetDateRange() {
   if (info) info.style.display = 'none';
   const yr = document.getElementById('yearSel');
   const mn = document.getElementById('monthSel');
-  yr.disabled = false; yr.style.opacity = '1';
-  mn.disabled = false; mn.style.opacity = '1';
-  yr.value = 'all'; mn.value = 'all';
-  if (Object.keys(rawData).length) applyFilters();
+  yr.disabled = false; yr.style.opacity = '1'; yr.value = 'all';
+  mn.disabled = false; mn.style.opacity = '1'; mn.value = 'all';
+  if (Object.keys(rawData).length) {
+    setTimeout(() => applyFilters(), 50);
+  }
 }
 
 // Initialize date range to full available range after load
@@ -908,13 +909,14 @@ function applyDateRange() {
     showAlert('Aguarde os dados carregarem antes de filtrar.');
     return;
   }
-  applyFilters();
+  setTimeout(() => applyFilters(), 50);
 }
 
 function applyFilters() {
-  // Don't run if no data loaded yet
   if (!Object.keys(rawData).length) return;
-
+  // Force destroy all charts on each render
+  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
+  charts = {};
   const rows = getFilteredRows();
   if (!rows.length) {
     // Find available date range in loaded data
@@ -954,9 +956,7 @@ function switchStore(store, el) {
 
 /* ── RENDER DASHBOARD ── */
 function renderDashboard(rows) {
-  // Destroy existing charts
-  Object.values(charts).forEach(c=>c.destroy());
-  charts = {};
+  // Charts already destroyed in applyFilters
 
   // Compute KPIs
   const faturamento = rows.reduce((a,r)=>a+parseBR(r.VALOR_LIQUIDO_VENDA),0);
