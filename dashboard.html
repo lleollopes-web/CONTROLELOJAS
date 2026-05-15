@@ -637,7 +637,7 @@ async function uploadToGitHub(inputs){
         document.getElementById(`prog_gh_${si}_${year}`).style.color='var(--verde)';
         // Also load locally
         await new Promise(resolve=>{
-          Papa.parse(file,{header:true,skipEmptyLines:true,encoding:'latin1',
+          Papa.parse(file,{header:true,skipEmptyLines:true,encoding:'windows-1252',
             complete:res=>{rawData[si+'_'+year]=res.data;resolve();}});
         });
       } else {
@@ -888,25 +888,20 @@ function renderDashboard(rows){
   const byStore={0:{name:'Iguatemi',val:0},1:{name:'RioMar',val:0},2:{name:'Calzedonia',val:0}};
   rows.forEach(r=>{if(byStore[r._storeIdx])byStore[r._storeIdx].val+=parseBR(r.VALOR_LIQUIDO_VENDA);});
 
-  // Vendedores — com tickets e ticket médio
+  // Vendedores — com tickets e ticket médio (inclui GERENTE)
   const byVend={};
   rows.forEach(r=>{
     const v=(r.VENDEDOR_APELIDO||'').trim();
-    if(!v||v==='GERENTE') return; // opcional: excluir GERENTE
+    if(!v) return;
     if(!byVend[v]) byVend[v]={qtde:0,val:0,tickets:new Set()};
     byVend[v].qtde+=(+r.QTDE_LIQUIDA||0);
     byVend[v].val+=parseBR(r.VALOR_LIQUIDO_VENDA);
     if(r.TICKET) byVend[v].tickets.add(r.TICKET);
   });
-  // Also include GERENTE
-  rows.forEach(r=>{
-    const v=(r.VENDEDOR_APELIDO||'').trim();
-    if(!v) return;
-    if(!byVend[v]) byVend[v]={qtde:0,val:0,tickets:new Set()};
-  });
   const topVend=Object.entries(byVend)
     .map(([v,d])=>([v,{...d,tix:d.tickets.size,ticketM:d.tickets.size?d.val/d.tickets.size:0}]))
-    .sort((a,b)=>b[1].val-a[1].val).slice(0,12);
+    .filter(([v,d])=>d.val!==0||d.qtde!==0)
+    .sort((a,b)=>b[1].val-a[1].val).slice(0,15);
 
   // YoY — compara o mesmo filtro atual entre 2025 e 2026
   const yr=document.getElementById('yearSel').value;
