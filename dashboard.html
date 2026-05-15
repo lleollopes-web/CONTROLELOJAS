@@ -711,7 +711,10 @@ function renderDashboard(rows){
           <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="chkTicket"> Ticket Médio</label>
           <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="chkDesc"> Descontos</label>
         </div>
-        <button onclick="renderComp()" style="align-self:flex-end;background:linear-gradient(135deg,var(--rosa),var(--coral));border:none;color:#fff;font-family:var(--font-b);font-size:13px;font-weight:700;padding:9px 20px;border-radius:10px;cursor:pointer;">✔ Comparar</button>
+        <div style="display:flex;gap:8px;align-self:flex-end;">
+          <button onclick="renderComp()" style="background:linear-gradient(135deg,var(--rosa),var(--coral));border:none;color:#fff;font-family:var(--font-b);font-size:13px;font-weight:700;padding:9px 20px;border-radius:10px;cursor:pointer;">✔ Comparar</button>
+          <button onclick="clearComp()" id="btnClearComp" style="display:none;background:rgba(0,0,0,0.06);border:none;color:#555;font-family:var(--font-b);font-size:13px;font-weight:600;padding:9px 16px;border-radius:10px;cursor:pointer;">✕ Limpar</button>
+        </div>
       </div>
       <div id="compResults" style="display:none;">
         <div id="compKpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px;"></div>
@@ -814,6 +817,27 @@ function getRowsForRange(fromVal,toVal){
   if(fromVal||toVal)rows=rows.filter(r=>{const dt=parseDate(r.DATA_VENDA);if(!dt)return false;const ts=dt.getTime();return ts>=fromTS&&ts<=toTS;});
   return rows;
 }
+function clearComp(){
+  // Clear date inputs
+  document.getElementById('compFromA').value='';
+  document.getElementById('compToA').value='';
+  document.getElementById('compFromB').value='';
+  document.getElementById('compToB').value='';
+  // Reset checkboxes
+  document.getElementById('chkFat').checked=true;
+  document.getElementById('chkQtde').checked=true;
+  document.getElementById('chkTicket').checked=false;
+  document.getElementById('chkDesc').checked=false;
+  // Destroy comparison charts
+  if(charts.comp){charts.comp.destroy();delete charts.comp;}
+  if(charts.growth){charts.growth.destroy();delete charts.growth;}
+  // Clear KPIs and hide results
+  document.getElementById('compKpis').innerHTML='';
+  document.getElementById('compResults').style.display='none';
+  // Hide limpar button
+  document.getElementById('btnClearComp').style.display='none';
+}
+
 function renderComp(){
   const fA=document.getElementById('compFromA').value,tA=document.getElementById('compToA').value;
   const fB=document.getElementById('compFromB').value,tB=document.getElementById('compToB').value;
@@ -884,6 +908,7 @@ charts.comp = {destroy:()=>{ metrics.forEach((_,i)=>{ if(charts['comp_'+i]){char
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(255,255,255,0.98)',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,titleColor:'#111',bodyColor:'#555',padding:10,cornerRadius:8,callbacks:{label:ctx=>`${ctx.raw>=0?'▲':'▼'} ${Math.abs(ctx.raw).toFixed(1)}%`}}},
       scales:{x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#777',font:{family:'DM Sans',size:11}}},y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#777',font:{family:'DM Sans',size:11},callback:v=>v+'%'}}}}});
   document.getElementById('compResults').style.display='block';
+  document.getElementById('btnClearComp').style.display='inline-block';
 }
 
 // Logos embedded
