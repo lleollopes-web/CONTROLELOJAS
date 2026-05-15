@@ -285,7 +285,15 @@ const fileSlots=[
   {label:'Calzedonia Iguatemi — 2025', key:'ca25',storeIdx:2,year:2025},
   {label:'Calzedonia Iguatemi — 2026', key:'ca26',storeIdx:2,year:2026},
 ];
-const USUARIOS=[{user:'carloscunha',pass:'1020'},{user:'leandro',pass:'1020'}];
+const USUARIOS=[
+  {user:'carloscunha', pass:'1020', store:null},  // acesso total
+  {user:'leandro',     pass:'1020', store:null},  // acesso total
+  {user:'raysse',      pass:'1020', store:null},  // acesso total
+  {user:'iguatemi',    pass:'0101', store:0},     // só Intimissimi Iguatemi
+  {user:'riomar',      pass:'0101', store:1},     // só Intimissimi RioMar
+  {user:'calzedonia',  pass:'0101', store:2},     // só Calzedonia Iguatemi
+];
+let userStoreRestriction = null; // null = sem restrição
 const MONTHS=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const PALETTE=['#E91E8C','#0099BB','#D4900A','#06D6A0','#FF4D6D','#7B61FF','#FF6BBE','#00B4D8','#F77F00','#4CC9F0'];
 const BG_LIST=['rgba(233,30,140,0.04)','rgba(0,153,187,0.04)','rgba(212,144,10,0.04)','rgba(6,214,160,0.04)','rgba(123,97,255,0.04)','rgba(255,77,109,0.04)','rgba(0,180,100,0.04)','rgba(255,140,0,0.04)'];
@@ -296,11 +304,19 @@ let rawData={},activeStore='all',charts={};
 function doLogin(){
   const u=document.getElementById('loginUser').value.trim().toLowerCase();
   const p=document.getElementById('loginPass').value;
-  if(USUARIOS.some(x=>x.user===u&&x.pass===p)){
+  const user=USUARIOS.find(x=>x.user===u&&x.pass===p);
+  if(user){
+    // Apply store restriction
+    userStoreRestriction = (user.store !== undefined && user.store !== null) ? user.store : null;
+    sessionStorage.setItem('auth', Date.now());
+    sessionStorage.setItem('storeRestriction', userStoreRestriction !== null ? userStoreRestriction : 'all');
     const s=document.getElementById('loginScreen');
     s.style.transition='opacity .5s';s.style.opacity='0';
-    setTimeout(()=>{s.style.display='none';autoLoadGitHub();},500);
-    sessionStorage.setItem('auth',Date.now());
+    setTimeout(()=>{
+      s.style.display='none';
+      applyStoreRestriction();
+      autoLoadGitHub();
+    },500);
   } else {
     const err=document.getElementById('loginError');
     err.style.display='block';err.style.animation='none';
@@ -313,13 +329,39 @@ function togglePass(){const i=document.getElementById('loginPass');i.type=i.type
 (function checkSession(){
   const auth=sessionStorage.getItem('auth');
   if(auth&&(Date.now()-+auth)<8*60*60*1000){
+    const stored=sessionStorage.getItem('storeRestriction');
+    userStoreRestriction = (stored&&stored!=='all') ? +stored : null;
     document.getElementById('loginScreen').style.display='none';
-    setTimeout(()=>autoLoadGitHub(),300);
+    setTimeout(()=>{ applyStoreRestriction(); autoLoadGitHub(); },300);
   } else {
     sessionStorage.removeItem('auth');
+    sessionStorage.removeItem('storeRestriction');
     setTimeout(()=>document.getElementById('loginUser').focus(),100);
   }
 })();
+
+/* STORE RESTRICTION */
+function applyStoreRestriction(){
+  if(userStoreRestriction === null){
+    // Full access - show all tabs
+    document.querySelectorAll('.tab').forEach(t=>t.style.display='');
+    return;
+  }
+  // Hide tabs that user cannot access
+  document.querySelectorAll('.tab').forEach(t=>{
+    const store = t.dataset.store;
+    if(store === 'all' || +store === userStoreRestriction){
+      t.style.display='';
+    } else {
+      t.style.display='none';
+    }
+  });
+  // Auto-select the restricted store
+  activeStore = userStoreRestriction;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const target = document.querySelector(`.tab[data-store="${userStoreRestriction}"]`);
+  if(target) target.classList.add('active');
+}
 
 /* HELPERS */
 function parseBR(v){
@@ -498,7 +540,10 @@ function resetDateRange(){
   if(Object.keys(rawData).length)setTimeout(()=>applyFilters(),50);
 }
 function getFilteredRows(){
-  const storeFilter=activeStore==='all'?[0,1,2]:[+activeStore];
+  // Apply store restriction from login
+  let allowedStores = [0,1,2];
+  if(userStoreRestriction !== null) allowedStores = [userStoreRestriction];
+  const storeFilter = activeStore==='all' ? allowedStores : [+activeStore].filter(s=>allowedStores.includes(s));
   const yr=document.getElementById('yearSel').value;
   const mnth=document.getElementById('monthSel').value;
   const fromVal=(document.getElementById('dateFrom')?.value||'').trim();
