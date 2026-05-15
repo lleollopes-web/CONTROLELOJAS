@@ -231,6 +231,8 @@ tr:hover td{background:rgba(0,0,0,0.015)}
     <span class="status-text" id="statusText">Carregando dados...</span>
     <span id="storesBadges"></span>
   </div>
+  <div id="dataImportInfo" style="display:none;margin:-8px 0 16px;padding:10px 16px;background:rgba(0,145,90,0.06);border:1px solid rgba(0,145,90,0.2);border-radius:10px;font-size:12px;color:#006B44;font-weight:500;display:flex;gap:20px;flex-wrap:wrap;">
+  </div>
   <div id="alertStrip"></div>
 
   <div class="tabs" id="storeTabs">
@@ -348,14 +350,46 @@ function showAlert(msg){
   el.textContent='⚠️ '+msg;el.style.display='block';
   setTimeout(()=>el.style.display='none',6000);
 }
+function getLastDate(storeIdx){
+  // Get the most recent date across all years for a store
+  let maxDate = null;
+  for(const yr of [2025,2026]){
+    const rows = rawData[storeIdx+'_'+yr] || [];
+    rows.forEach(r => {
+      const dt = parseDate(r.DATA_VENDA);
+      if(dt && (!maxDate || dt > maxDate)) maxDate = dt;
+    });
+  }
+  return maxDate;
+}
+
 function updateStatus(){
   const keys=Object.keys(rawData);
   if(!keys.length){setStatus('','Nenhum dado carregado.');return;}
   const total=Object.values(rawData).reduce((a,b)=>a+b.length,0);
   setStatus('ok',`${total.toLocaleString('pt-BR')} registros carregados · ${keys.length} arquivo(s)`);
   document.getElementById('storesBadges').innerHTML=STORES.map((s,i)=>{
-    return keys.some(k=>k.startsWith(i+'_'))?`<span class="store-badge badge-${i}">${s.short}</span>`:'';
+    const has = keys.some(k=>k.startsWith(i+'_'));
+    if(!has) return '';
+    const last = getLastDate(i);
+    const lastStr = last ? last.toLocaleDateString('pt-BR') : '—';
+    return `<span class="store-badge badge-${i}">${s.short}</span>`;
   }).join(' ');
+
+  // Update import info bar
+  const infoDiv = document.getElementById('dataImportInfo');
+  if(infoDiv){
+    const infos = STORES.map((s,i) => {
+      if(!keys.some(k=>k.startsWith(i+'_'))) return '';
+      const last = getLastDate(i);
+      const lastStr = last ? last.toLocaleDateString('pt-BR') : '—';
+      return `<span>📅 <strong>${s.short}:</strong> dados importados até <strong>${lastStr}</strong></span>`;
+    }).filter(Boolean);
+    if(infos.length){
+      infoDiv.innerHTML = infos.join('<span style="color:rgba(0,107,68,.3);">|</span>');
+      infoDiv.style.display = 'flex';
+    }
+  }
 }
 
 /* GITHUB */
