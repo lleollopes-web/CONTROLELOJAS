@@ -846,7 +846,9 @@ function renderDashboard(rows){
     byProd[key].qtde+=qtd;
     byProd[key].val+=val;
   });
-  const topProd=Object.entries(byProd).sort((a,b)=>b[1].qtde-a[1].qtde||b[1].val-a[1].val).slice(0,10);
+  const topProd    = Object.entries(byProd).sort((a,b)=>b[1].qtde-a[1].qtde||b[1].val-a[1].val).slice(0,10);
+  const topProdFat = Object.entries(byProd).sort((a,b)=>b[1].val-a[1].val||b[1].qtde-a[1].qtde).slice(0,10);
+  const qtdeTot    = Object.values(byProd).reduce((a,b)=>a+b.qtde,0);
 
   // Grupos
   const byGrupo={};
@@ -979,10 +981,36 @@ function renderDashboard(rows){
     ${activeStore==='all'?`<div class="chart-grid"><div class="chart-card d3" style="grid-column:1/-1;"><div class="chart-title">Faturamento por Loja</div><div style="height:220px;"><canvas id="cStore"></canvas></div></div></div>`:''}
 
     <div class="section-title">Top Produtos</div>
-    <div class="table-wrap d1">
-      <div class="table-header"><h3>10 Produtos Mais Vendidos (Qtde)</h3></div>
-      <table><thead><tr><th>#</th><th>Código</th><th>Cor</th><th>Produto</th><th>Qtde</th><th>Faturamento</th><th>% Total</th></tr></thead>
-      <tbody>${topProd.map(([key,v],i)=>`<tr><td class="rank">${i+1}</td><td style="font-family:monospace;font-size:11px;color:#777;">${v.cod||'—'}</td><td><span class="pill pill-amber" style="font-size:10px;">${v.cor||'—'}</span></td><td style="font-weight:500;">${v.desc||key}</td><td><strong>${fmtN(v.qtde)}</strong></td><td>${fmtBRL(v.val)}</td><td><span class="pill ${i<3?'pill-rosa':'pill-verde'}">${fat?((v.val/fat)*100).toFixed(1)+'%':'—'}</span></td></tr>`).join('')}</tbody></table>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;">
+
+      <!-- Ranking por Quantidade -->
+      <div class="table-wrap d1">
+        <div class="table-header"><h3>🏆 Top 10 por Quantidade</h3></div>
+        <table><thead><tr><th>#</th><th>Cód.</th><th>Cor</th><th>Produto</th><th>Qtde</th><th>% Total</th></tr></thead>
+        <tbody>${topProd.map(([key,v],i)=>`<tr>
+          <td class="rank">${i+1}</td>
+          <td style="font-family:monospace;font-size:11px;color:#777;">${v.cod||'—'}</td>
+          <td><span class="pill pill-amber" style="font-size:10px;">${v.cor||'—'}</span></td>
+          <td style="font-weight:500;font-size:12px;">${v.desc||key}</td>
+          <td><strong>${fmtN(v.qtde)}</strong></td>
+          <td><span class="pill pill-verde">${qtdeTot?((v.qtde/qtdeTot)*100).toFixed(1)+'%':'—'}</span></td>
+        </tr>`).join('')}</tbody></table>
+      </div>
+
+      <!-- Ranking por Faturamento -->
+      <div class="table-wrap d2">
+        <div class="table-header"><h3>💰 Top 10 por Faturamento</h3></div>
+        <table><thead><tr><th>#</th><th>Cód.</th><th>Cor</th><th>Produto</th><th>Faturamento</th><th>% Total</th></tr></thead>
+        <tbody>${topProdFat.map(([key,v],i)=>`<tr>
+          <td class="rank">${i+1}</td>
+          <td style="font-family:monospace;font-size:11px;color:#777;">${v.cod||'—'}</td>
+          <td><span class="pill pill-amber" style="font-size:10px;">${v.cor||'—'}</span></td>
+          <td style="font-weight:500;font-size:12px;">${v.desc||key}</td>
+          <td><strong style="color:var(--rosa);">${fmtBRL(v.val)}</strong></td>
+          <td><span class="pill pill-verde">${fat?((v.val/fat)*100).toFixed(1)+'%':'—'}</span></td>
+        </tr>`).join('')}</tbody></table>
+      </div>
+
     </div>
 
     <div class="section-title">Top 5 por Subgrupo</div>
