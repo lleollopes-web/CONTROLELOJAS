@@ -262,32 +262,29 @@ tr:hover td{background:rgba(0,0,0,0.015)}
   <div class="modal" style="max-width:580px;">
     <h2>📂 Importar Arquivos CSV</h2>
 
-    <!-- Modo toggle -->
-    <div style="display:flex;gap:0;margin-bottom:20px;border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-      <button id="btnModeLocal" onclick="setImportMode('local')"
-        style="flex:1;border:none;border-radius:0;padding:9px;font-size:13px;font-weight:600;background:var(--rosa);color:#fff;cursor:pointer;">
-        💾 Temporário (sessão)
-      </button>
-      <button id="btnModeGithub" onclick="setImportMode('github')"
-        style="flex:1;border:none;border-radius:0;padding:9px;font-size:13px;font-weight:600;background:#f5f5f7;color:#555;cursor:pointer;">
-        ☁️ Salvar no GitHub
-      </button>
-    </div>
+    <!-- Sempre modo GitHub -->
 
-    <!-- Token input (GitHub mode) -->
-    <div id="tokenSection" style="display:none;margin-bottom:16px;padding:14px;background:rgba(200,0,110,0.04);border:1px solid rgba(200,0,110,0.2);border-radius:10px;">
-      <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#555;display:block;margin-bottom:6px;">🔑 GitHub Personal Access Token</label>
+    <!-- Token input - protegido -->
+    <div id="tokenSection" style="margin-bottom:16px;padding:14px;background:rgba(200,0,110,0.04);border:1px solid rgba(200,0,110,0.2);border-radius:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#555;">🔑 GitHub Personal Access Token</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span id="tokenStatus" style="font-size:11px;color:var(--verde);font-weight:600;"></span>
+          <button onclick="toggleTokenEdit()" id="btnEditToken" style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;color:#555;box-shadow:none;">✏️ Editar</button>
+        </div>
+      </div>
       <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-        value="" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font-b);font-size:13px;outline:none;">
+        readonly
+        style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font-b);font-size:13px;outline:none;background:#f8f8fc;color:#555;cursor:default;">
       <p style="font-size:11px;color:#888;margin-top:6px;">Token com permissão <strong>repo</strong>. Salvo na sessão. <a href="https://github.com/settings/tokens/new?scopes=repo&description=Dashboard" target="_blank" style="color:var(--rosa);">Criar token →</a></p>
     </div>
 
-    <p id="importModeInfo" style="font-size:12px;color:#888;margin-bottom:14px;">Os dados ficam disponíveis apenas nesta sessão do navegador.</p>
+    <p style="font-size:12px;color:#888;margin-bottom:14px;">☁️ Os arquivos serão enviados ao GitHub e ficarão salvos permanentemente.</p>
     <div class="file-list" id="fileList"></div>
     <div id="uploadProgress" style="display:none;margin-top:14px;"></div>
     <div class="modal-actions">
       <button onclick="closeModal()">Cancelar</button>
-      <button class="btn-primary" id="btnImport" onclick="processFiles()">✔ Carregar</button>
+      <button class="btn-primary" id="btnImport" onclick="processFiles()">☁️ Enviar ao GitHub</button>
     </div>
   </div>
 </div>
@@ -505,28 +502,43 @@ async function loadLogos(){
 /* MODAL */
 let importMode = 'local';
 
-function setImportMode(mode){
-  importMode = mode;
-  const localBtn   = document.getElementById('btnModeLocal');
-  const githubBtn  = document.getElementById('btnModeGithub');
-  const tokenSec   = document.getElementById('tokenSection');
-  const infoEl     = document.getElementById('importModeInfo');
-  const btnImport  = document.getElementById('btnImport');
-  if(mode === 'github'){
-    localBtn.style.background  = '#f5f5f7'; localBtn.style.color  = '#555';
-    githubBtn.style.background = 'var(--rosa)'; githubBtn.style.color = '#fff';
-    tokenSec.style.display  = 'block';
-    infoEl.textContent = '☁️ Os arquivos serão enviados ao GitHub e ficarão salvos permanentemente.';
-    btnImport.textContent = '☁️ Enviar ao GitHub';
-    // Restore saved token
-    const saved = sessionStorage.getItem('gh_token');
-    if(saved) document.getElementById('ghToken').value = saved;
+function onFileSelected(id, color){
+  const inp = document.getElementById(id);
+  const lbl = document.getElementById('lbl_'+id);
+  const status = document.getElementById('status_'+id);
+  const fname  = document.getElementById('fname_'+id);
+  if(inp && inp.files[0]){
+    lbl.style.background = 'rgba(200,0,110,0.07)';
+    lbl.style.borderColor = color || 'var(--rosa)';
+    lbl.style.borderStyle = 'solid';
+    status.textContent = '📄 ' + inp.files[0].name.split('/').pop();
+    status.className = 'file-item-status f-loaded';
+    status.style.background = 'rgba(200,0,110,0.12)';
+    status.style.color = 'var(--rosa)';
+  }
+}
+
+function toggleTokenEdit(){
+  const inp = document.getElementById('ghToken');
+  const btn = document.getElementById('btnEditToken');
+  const isReadonly = inp.readOnly;
+  if(isReadonly){
+    inp.readOnly = false;
+    inp.style.background = '#fff';
+    inp.style.cursor = 'text';
+    inp.style.color = '#111';
+    inp.focus();
+    inp.select();
+    btn.textContent = '🔒 Bloquear';
+    btn.style.color = 'var(--rosa)';
   } else {
-    localBtn.style.background  = 'var(--rosa)'; localBtn.style.color  = '#fff';
-    githubBtn.style.background = '#f5f5f7'; githubBtn.style.color = '#555';
-    tokenSec.style.display  = 'none';
-    infoEl.textContent = '💾 Os dados ficam disponíveis apenas nesta sessão do navegador.';
-    btnImport.textContent = '✔ Carregar';
+    inp.readOnly = true;
+    inp.style.background = '#f8f8fc';
+    inp.style.cursor = 'default';
+    inp.style.color = '#555';
+    btn.textContent = '✏️ Editar';
+    btn.style.color = '#555';
+    if(inp.value) sessionStorage.setItem('gh_token', inp.value);
   }
 }
 
@@ -537,27 +549,31 @@ function openModal(){
     const id='inp_'+slot.key;
     const loaded=rawData[slot.storeIdx+'_'+slot.year];
     const color=STORES[slot.storeIdx].color;
-    fl.innerHTML+=`<label class="file-item" for="${id}" style="border-color:${loaded?color:''};">
-      <input type="file" id="${id}" accept=".csv" data-si="${slot.storeIdx}" data-year="${slot.year}" data-fname="${STORES[slot.storeIdx].files[slot.year]}">
-      <div class="file-item-label"><strong>${slot.label}</strong><span>${STORES[slot.storeIdx].name}</span></div>
-      <span class="file-item-status ${loaded?'f-loaded':'f-waiting'}">${loaded?'✔ Carregado':'Selecionar'}</span>
+    fl.innerHTML+=`<label class="file-item" id="lbl_${id}" for="${id}" style="border-color:${loaded?color:''};transition:all .2s;">
+      <input type="file" id="${id}" accept=".csv" data-si="${slot.storeIdx}" data-year="${slot.year}" data-fname="${STORES[slot.storeIdx].files[slot.year]}"
+        onchange="onFileSelected('${id}','${color}')">
+      <div class="file-item-label"><strong>${slot.label}</strong><span id="fname_${id}" style="font-size:11px;color:#888;">${STORES[slot.storeIdx].name}</span></div>
+      <span class="file-item-status ${loaded?'f-loaded':'f-waiting'}" id="status_${id}">${loaded?'✔ Carregado':'Selecionar'}</span>
     </label>`;
   });
   document.getElementById('uploadProgress').style.display='none';
   document.getElementById('uploadProgress').innerHTML='';
   document.getElementById('modalOverlay').classList.add('open');
-  setImportMode('local');
+  // Always GitHub mode - restore token
+  importMode = 'github';
+  const saved = sessionStorage.getItem('gh_token');
+  const tokenInp = document.getElementById('ghToken');
+  if(saved){
+    tokenInp.value = saved;
+    const status = document.getElementById('tokenStatus');
+    if(status) status.textContent = '✅ Configurado';
+  }
 }
 function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
 async function processFiles(){
   const inputs=[...document.querySelectorAll('#fileList input[type=file]')].filter(i=>i.files[0]);
-  if(!inputs.length){closeModal();return;}
-
-  if(importMode === 'github'){
-    await uploadToGitHub(inputs);
-  } else {
-    await loadLocally(inputs);
-  }
+  if(!inputs.length){showToast('⚠️ Selecione pelo menos um arquivo.','erro');return;}
+  await uploadToGitHub(inputs);
 }
 
 async function loadLocally(inputs){
