@@ -538,28 +538,6 @@ const USUARIOS = [
   { user: 'leandro',     pass: '1020' },
 ];
 
-// doLogin replaced by auto-load version above
-
-function togglePass() {
-  const inp = document.getElementById('loginPass');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-}
-
-// Verifica se já está autenticado nesta sessão
-(function checkSession() {
-  const auth = sessionStorage.getItem('auth');
-  if (auth && (Date.now() - +auth) < 8 * 60 * 60 * 1000) {
-    document.getElementById('loginScreen').style.display = 'none';
-    // Auto-carrega dados do GitHub após login ativo
-    setTimeout(() => autoLoadGitHub(), 300);
-  } else {
-    sessionStorage.removeItem('auth');
-    setTimeout(() => document.getElementById('loginUser').focus(), 100);
-  }
-})();
-
-// Auto-load após login bem-sucedido
-const _origDoLogin = doLogin;
 function doLogin() {
   const u = document.getElementById('loginUser').value.trim().toLowerCase();
   const p = document.getElementById('loginPass').value;
@@ -582,6 +560,26 @@ function doLogin() {
     document.getElementById('loginPass').focus();
   }
 }
+
+function togglePass() {
+  const inp = document.getElementById('loginPass');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+// Verifica se já está autenticado nesta sessão
+(function checkSession() {
+  const auth = sessionStorage.getItem('auth');
+  if (auth && (Date.now() - +auth) < 8 * 60 * 60 * 1000) {
+    document.getElementById('loginScreen').style.display = 'none';
+    // Auto-carrega dados do GitHub após login ativo
+    setTimeout(() => autoLoadGitHub(), 300);
+  } else {
+    sessionStorage.removeItem('auth');
+    setTimeout(() => document.getElementById('loginUser').focus(), 100);
+  }
+})();
+
+// auto-load handled by doLogin above
 
 async function autoLoadGitHub() {
   // Seleciona "Todos os Anos" automaticamente
