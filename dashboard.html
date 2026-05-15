@@ -846,7 +846,7 @@ function renderDashboard(rows){
     byProd[key].qtde+=qtd;
     byProd[key].val+=val;
   });
-  const topProd=Object.entries(byProd).sort((a,b)=>b[1].qtde-a[1].qtde).slice(0,10);
+  const topProd=Object.entries(byProd).sort((a,b)=>b[1].qtde-a[1].qtde||b[1].val-a[1].val).slice(0,10);
 
   // Grupos
   const byGrupo={};
@@ -876,9 +876,9 @@ function renderDashboard(rows){
     bySGTable[sg][key].val+=val;
   });
   const topBySG=Object.entries(bySGTable)
-    .map(([sub,prods])=>{const items=Object.values(prods).sort((a,b)=>b.qtde-a.qtde).slice(0,5);return{sub,items,total:items.reduce((a,b)=>a+b.qtde,0)};})
+    .map(([sub,prods])=>{const items=Object.values(prods).sort((a,b)=>b.qtde-a.qtde||b.val-a.val).slice(0,5);return{sub,items,total:items.reduce((a,b)=>a+b.qtde,0)};})
     .filter(x=>x.total>0)
-    .sort((a,b)=>b.total-a.total).slice(0,8);
+    .sort((a,b)=>b.total-a.total||b.items.reduce((s,i)=>s+i.val,0)-a.items.reduce((s,i)=>s+i.val,0)).slice(0,8);
 
   // Cat
   const byCat={};
@@ -888,10 +888,25 @@ function renderDashboard(rows){
   const byStore={0:{name:'Iguatemi',val:0},1:{name:'RioMar',val:0},2:{name:'Calzedonia',val:0}};
   rows.forEach(r=>{if(byStore[r._storeIdx])byStore[r._storeIdx].val+=parseBR(r.VALOR_LIQUIDO_VENDA);});
 
-  // Vendedores
+  // Vendedores — com tickets e ticket médio
   const byVend={};
-  rows.forEach(r=>{const v=(r.VENDEDOR_APELIDO||'').trim();if(!v)return;if(!byVend[v])byVend[v]={qtde:0,val:0};byVend[v].qtde+=(+r.QTDE_LIQUIDA||0);byVend[v].val+=parseBR(r.VALOR_LIQUIDO_VENDA);});
-  const topVend=Object.entries(byVend).sort((a,b)=>b[1].val-a[1].val).slice(0,8);
+  rows.forEach(r=>{
+    const v=(r.VENDEDOR_APELIDO||'').trim();
+    if(!v||v==='GERENTE') return; // opcional: excluir GERENTE
+    if(!byVend[v]) byVend[v]={qtde:0,val:0,tickets:new Set()};
+    byVend[v].qtde+=(+r.QTDE_LIQUIDA||0);
+    byVend[v].val+=parseBR(r.VALOR_LIQUIDO_VENDA);
+    if(r.TICKET) byVend[v].tickets.add(r.TICKET);
+  });
+  // Also include GERENTE
+  rows.forEach(r=>{
+    const v=(r.VENDEDOR_APELIDO||'').trim();
+    if(!v) return;
+    if(!byVend[v]) byVend[v]={qtde:0,val:0,tickets:new Set()};
+  });
+  const topVend=Object.entries(byVend)
+    .map(([v,d])=>([v,{...d,tix:d.tickets.size,ticketM:d.tickets.size?d.val/d.tickets.size:0}]))
+    .sort((a,b)=>b[1].val-a[1].val).slice(0,12);
 
   // YoY — compara o mesmo filtro atual entre 2025 e 2026
   const yr=document.getElementById('yearSel').value;
@@ -1038,8 +1053,28 @@ function renderDashboard(rows){
     <div class="section-title">Performance de Vendedores</div>
     <div class="table-wrap d2">
       <div class="table-header"><h3>Ranking de Vendedores</h3></div>
-      <table><thead><tr><th>#</th><th>Vendedor</th><th>Faturamento</th><th>Peças</th></tr></thead>
-      <tbody>${topVend.map(([v,d],i)=>`<tr><td class="rank">${i+1}</td><td style="font-weight:500;">${v}</td><td><strong>${fmtBRL(d.val)}</strong></td><td>${fmtN(d.qtde)}</td></tr>`).join('')}</tbody></table>
+      <table><thead><tr>
+        <th>#</th>
+        <th>Vendedor</th>
+        <th>Faturamento</th>
+        <th>Peças (Líq.)</th>
+        <th>Nº Tickets</th>
+        <th>Ticket Médio</th>
+        <th>% Faturamento</th>
+      </tr></thead>
+      <tbody>${topVend.map(([v,d],i)=>{
+        const pct = fat ? ((d.val/fat)*100).toFixed(1)+'%' : '—';
+        const rankColor = i===0?'#FFD700':i===1?'#C0C0C0':i===2?'#CD7F32':'';
+        return `<tr>
+          <td class="rank">${rankColor?`<span style="font-size:16px;">${i===0?'🥇':i===1?'🥈':'🥉'}</span>`:(i+1)}</td>
+          <td style="font-weight:700;color:#111;">${v}</td>
+          <td><strong style="color:var(--rosa);">${fmtBRL(d.val)}</strong></td>
+          <td>${fmtN(d.qtde)}</td>
+          <td style="color:#555;">${fmtN(d.tix)}</td>
+          <td style="color:#555;">${fmtBRL(d.ticketM)}</td>
+          <td><span class="pill ${i<3?'pill-rosa':'pill-verde'}">${pct}</span></td>
+        </tr>`;
+      }).join('')}</tbody></table>
     </div>
   `;
 
