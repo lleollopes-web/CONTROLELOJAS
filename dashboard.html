@@ -635,13 +635,20 @@ function renderDashboard(rows){
   });
   const monthArr=Object.values(byMonth).sort((a,b)=>a.dt-b.dt);
 
-  // Top produtos
+  // Top produtos — chave: CÓDIGO + COR (mesmo critério do Top 5 por Subgrupo)
   const byProd={};
   rows.forEach(r=>{
-    const p=(r.DESC_PRODUTO||'').trim();if(!p)return;
-    if(!byProd[p])byProd[p]={qtde:0,val:0,cod:(r.PRODUTO||'').trim(),cor:(r.COR_PRODUTO||'').trim()};
-    byProd[p].qtde+=(+r.QTDE_LIQUIDA||0);
-    byProd[p].val+=parseBR(r.VALOR_LIQUIDO_VENDA);
+    const cod=(r.PRODUTO||'').trim();
+    const cor=(r.COR_PRODUTO||'').trim();
+    const p=(r.DESC_PRODUTO||'').trim();
+    if(!cod&&!p)return;
+    const key=cod&&cor ? `${cod}|${cor}` : cod||p;
+    const val=parseBR(r.VALOR_LIQUIDO_VENDA);
+    const qtd=+r.QTDE_LIQUIDA||0;
+    if(val===0&&qtd===0)return;
+    if(!byProd[key])byProd[key]={qtde:0,val:0,cod,cor,desc:p};
+    byProd[key].qtde+=qtd;
+    byProd[key].val+=val;
   });
   const topProd=Object.entries(byProd).sort((a,b)=>b[1].qtde-a[1].qtde).slice(0,10);
 
@@ -769,7 +776,7 @@ function renderDashboard(rows){
     <div class="table-wrap d1">
       <div class="table-header"><h3>10 Produtos Mais Vendidos (Qtde)</h3></div>
       <table><thead><tr><th>#</th><th>Código</th><th>Cor</th><th>Produto</th><th>Qtde</th><th>Faturamento</th><th>% Total</th></tr></thead>
-      <tbody>${topProd.map(([p,v],i)=>`<tr><td class="rank">${i+1}</td><td style="font-family:monospace;font-size:11px;color:#777;">${v.cod||'—'}</td><td><span class="pill pill-amber" style="font-size:10px;">${v.cor||'—'}</span></td><td style="font-weight:500;">${p}</td><td><strong>${fmtN(v.qtde)}</strong></td><td>${fmtBRL(v.val)}</td><td><span class="pill ${i<3?'pill-rosa':'pill-verde'}">${fat?((v.val/fat)*100).toFixed(1)+'%':'—'}</span></td></tr>`).join('')}</tbody></table>
+      <tbody>${topProd.map(([key,v],i)=>`<tr><td class="rank">${i+1}</td><td style="font-family:monospace;font-size:11px;color:#777;">${v.cod||'—'}</td><td><span class="pill pill-amber" style="font-size:10px;">${v.cor||'—'}</span></td><td style="font-weight:500;">${v.desc||key}</td><td><strong>${fmtN(v.qtde)}</strong></td><td>${fmtBRL(v.val)}</td><td><span class="pill ${i<3?'pill-rosa':'pill-verde'}">${fat?((v.val/fat)*100).toFixed(1)+'%':'—'}</span></td></tr>`).join('')}</tbody></table>
     </div>
 
     <div class="section-title">Top 5 por Subgrupo</div>
