@@ -635,18 +635,26 @@ function renderDashboard(rows){
   const bySGChart={};
   rows.forEach(r=>{const sg=(r.SUBGRUPO_PRODUTO||'').trim();if(!sg||sg==='NO SAP')return;if(!bySGChart[sg])bySGChart[sg]=0;bySGChart[sg]+=parseBR(r.VALOR_LIQUIDO_VENDA);});
 
-  // SubGrupo table
+  // SubGrupo table — exclui NO SAP, agrupa por código+descrição
   const bySGTable={};
   rows.forEach(r=>{
     const sg=(r.SUBGRUPO_PRODUTO||'').trim(),p=(r.DESC_PRODUTO||'').trim();
-    if(!sg||!p)return;
+    const cod=(r.PRODUTO||'').trim(),cor=(r.COR_PRODUTO||'').trim();
+    if(!sg||!p||sg==='NO SAP'||sg===''||p==='NO SAP') return;
+    // Exclude zero-value records
+    const val=parseBR(r.VALOR_LIQUIDO_VENDA);
+    const qtd=+r.QTDE_LIQUIDA||0;
+    if(val<=0&&qtd<=0) return;
     if(!bySGTable[sg])bySGTable[sg]={};
-    if(!bySGTable[sg][p])bySGTable[sg][p]={qtde:0,val:0,cod:(r.PRODUTO||'').trim(),cor:(r.COR_PRODUTO||'').trim(),desc:p};
-    bySGTable[sg][p].qtde+=(+r.QTDE_LIQUIDA||0);
-    bySGTable[sg][p].val+=parseBR(r.VALOR_LIQUIDO_VENDA);
+    // Group by cod+desc for unique product identity
+    const key=cod?`${cod}|${p}`:`${p}`;
+    if(!bySGTable[sg][key])bySGTable[sg][key]={qtde:0,val:0,cod,cor,desc:p};
+    bySGTable[sg][key].qtde+=qtd;
+    bySGTable[sg][key].val+=val;
   });
   const topBySG=Object.entries(bySGTable)
     .map(([sub,prods])=>{const items=Object.values(prods).sort((a,b)=>b.qtde-a.qtde).slice(0,5);return{sub,items,total:items.reduce((a,b)=>a+b.qtde,0)};})
+    .filter(x=>x.total>0)
     .sort((a,b)=>b.total-a.total).slice(0,8);
 
   // Cat
@@ -662,22 +670,52 @@ function renderDashboard(rows){
   rows.forEach(r=>{const v=(r.VENDEDOR_APELIDO||'').trim();if(!v)return;if(!byVend[v])byVend[v]={qtde:0,val:0};byVend[v].qtde+=(+r.QTDE_LIQUIDA||0);byVend[v].val+=parseBR(r.VALOR_LIQUIDO_VENDA);});
   const topVend=Object.entries(byVend).sort((a,b)=>b[1].val-a[1].val).slice(0,8);
 
-  // YoY
+  // YoY — compara o mesmo filtro atual entre 2025 e 2026
   const yr=document.getElementById('yearSel').value;
+  const mnthYoy=document.getElementById('monthSel').value;
+  const fromValYoy=(document.getElementById('dateFrom')?.value||'').trim();
+  const toValYoy=(document.getElementById('dateTo')?.value||'').trim();
   let yoyHtml='';
-  if(yr==='all'){
+
+  // Só mostra se "Todos os Anos" estiver selecionado (sem filtro de ano específico)
+  // e se tivermos dados dos dois anos
+  const has2025=Object.keys(rawData).some(k=>k.endsWith('_2025'));
+  const has2026=Object.keys(rawData).some(k=>k.endsWith('_2026'));
+
+  if(yr==='all' && has2025 && has2026 && !fromValYoy && !toValYoy){
     const sf=activeStore==='all'?[0,1,2]:[+activeStore];
     const r25=[],r26=[];
+
     sf.forEach(si=>{
-      (rawData[si+'_2025']||[]).forEach(r=>{const dt=parseDate(r.DATA_VENDA);if(dt&&[2,3].includes(dt.getMonth()+1))r25.push(r);});
-      (rawData[si+'_2026']||[]).forEach(r=>r26.push(r));
+      // 2025: aplica mesmo filtro de mês
+      (rawData[si+'_2025']||[]).forEach(r=>{
+        if(mnthYoy!=='all'){
+          const dt=parseDate(r.DATA_VENDA);
+          if(dt&&(dt.getMonth()+1)===+mnthYoy) r25.push(r);
+        } else {
+          r25.push(r);
+        }
+      });
+      // 2026: aplica mesmo filtro de mês
+      (rawData[si+'_2026']||[]).forEach(r=>{
+        if(mnthYoy!=='all'){
+          const dt=parseDate(r.DATA_VENDA);
+          if(dt&&(dt.getMonth()+1)===+mnthYoy) r26.push(r);
+        } else {
+          r26.push(r);
+        }
+      });
     });
+
     if(r25.length&&r26.length){
       const f25=r25.reduce((a,r)=>a+parseBR(r.VALOR_LIQUIDO_VENDA),0);
       const f26=r26.reduce((a,r)=>a+parseBR(r.VALOR_LIQUIDO_VENDA),0);
       const pct=f25?((f26-f25)/f25*100):0;
       const color=pct>=0?'var(--verde)':'var(--coral)';
-      yoyHtml=`<div class="kpi-card d5" style="border-top:3px solid ${color};"><div class="kpi-icon">📈</div><div class="kpi-label">Var. 2026 vs 2025</div><div class="kpi-value" style="font-size:26px;color:${color};">${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(1)}%</div><div class="kpi-sub">${fmtBRL(f25)} → ${fmtBRL(f26)}</div></div>`;
+      const periodoLabel=mnthYoy!=='all'
+        ? `${['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][+mnthYoy]} 2025 vs 2026`
+        : 'Total 2025 vs 2026';
+      yoyHtml=`<div class="kpi-card d5" style="border-top:3px solid ${color};"><div class="kpi-icon">📈</div><div class="kpi-label">${periodoLabel}</div><div class="kpi-value" style="font-size:26px;color:${color};">${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(1)}%</div><div class="kpi-sub">${fmtBRL(f25)} → ${fmtBRL(f26)}</div></div>`;
     }
   }
 
