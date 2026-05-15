@@ -409,7 +409,13 @@ function updateStatus(){
   const keys=Object.keys(rawData);
   if(!keys.length){setStatus('','Nenhum dado carregado.');return;}
   const total=Object.values(rawData).reduce((a,b)=>a+b.length,0);
-  setStatus('ok',`${total.toLocaleString('pt-BR')} registros carregados · ${keys.length} arquivo(s)`);
+  const yr=document.getElementById('yearSel').value;
+  const mnth=document.getElementById('monthSel').value;
+  const filterInfo = (yr!=='all'&&mnth!=='all') ? ` · Filtro: ${['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][+mnth]}/${yr}`
+    : (yr!=='all') ? ` · Filtro: ${yr}`
+    : (mnth!=='all') ? ` · Filtro: ${['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][+mnth]} (todos os anos)`
+    : '';
+  setStatus('ok',`${total.toLocaleString('pt-BR')} registros carregados · ${keys.length} arquivo(s)${filterInfo}`);
   document.getElementById('storesBadges').innerHTML=STORES.map((s,i)=>{
     const has = keys.some(k=>k.startsWith(i+'_'));
     if(!has) return '';
@@ -583,6 +589,18 @@ function applyFilters(){
   if(!Object.keys(rawData).length)return;
   Object.values(charts).forEach(c=>{try{c.destroy();}catch(e){}});
   charts={};
+  // Warn if filtering by month without specifying year
+  const yr=document.getElementById('yearSel').value;
+  const mnth=document.getElementById('monthSel').value;
+  const fromVal=(document.getElementById('dateFrom')?.value||'').trim();
+  const alertEl=document.getElementById('alertStrip');
+  if(mnth!=='all' && yr==='all' && !fromVal){
+    const mName=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][+mnth];
+    alertEl.textContent=`⚠️ Mostrando ${mName} de TODOS os anos (2025+2026). Para ver apenas um ano, selecione o ano no filtro.`;
+    alertEl.style.display='block';
+  } else {
+    alertEl.style.display='none';
+  }
   const rows=getFilteredRows();
   if(!rows.length){
     let minDate=null,maxDate=null;
@@ -645,7 +663,8 @@ function renderDashboard(rows){
     if(!sg||!p||sg==='NO SAP'||sg===''||p==='NO SAP') return;
     const val=parseBR(r.VALOR_LIQUIDO_VENDA);
     const qtd=+r.QTDE_LIQUIDA||0;
-    if(val<=0&&qtd<=0) return;
+    // Incluir negativos (devoluções) — só excluir se ambos forem exatamente zero
+    if(val===0&&qtd===0) return;
     if(!bySGTable[sg])bySGTable[sg]={};
     // Chave: código + descrição + cor
     const key=`${cod}|${p}|${cor}`;
