@@ -264,20 +264,12 @@ tr:hover td{background:rgba(0,0,0,0.015)}
 
     <!-- Sempre modo GitHub -->
 
-    <!-- Token input - protegido -->
-    <div id="tokenSection" style="margin-bottom:16px;padding:14px;background:rgba(200,0,110,0.04);border:1px solid rgba(200,0,110,0.2);border-radius:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#555;">🔑 GitHub Personal Access Token</label>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <span id="tokenStatus" style="font-size:11px;color:var(--verde);font-weight:600;"></span>
-          <button onclick="toggleTokenEdit()" id="btnEditToken" style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;color:#555;box-shadow:none;">✏️ Editar</button>
-        </div>
-      </div>
-      <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-        readonly
-        style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font-b);font-size:13px;outline:none;background:#f8f8fc;color:#555;cursor:default;">
-      <p style="font-size:11px;color:#888;margin-top:6px;">Token com permissão <strong>repo</strong>. Salvo na sessão. <a href="https://github.com/settings/tokens/new?scopes=repo&description=Dashboard" target="_blank" style="color:var(--rosa);">Criar token →</a></p>
+    <!-- Token configurado no código -->
+    <div style="margin-bottom:12px;padding:10px 14px;background:rgba(0,145,90,0.06);border:1px solid rgba(0,145,90,0.2);border-radius:10px;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:16px;">✅</span>
+      <span style="font-size:12px;font-weight:600;color:#00915A;">Conexão com GitHub configurada</span>
     </div>
+    <input type="hidden" id="ghToken" value="">
 
     <p style="font-size:12px;color:#888;margin-bottom:14px;">☁️ Os arquivos serão enviados ao GitHub e ficarão salvos permanentemente.</p>
     <div class="file-list" id="fileList"></div>
@@ -293,7 +285,7 @@ tr:hover td{background:rgba(0,0,0,0.015)}
 const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/lleollopes-web/CONTROLELOJAS/main/';
 const GITHUB_REPO   = 'lleollopes-web/CONTROLELOJAS';
 const GITHUB_BRANCH = 'main';
-let GITHUB_TOKEN = sessionStorage.getItem('gh_token') || '';
+let GITHUB_TOKEN = localStorage.getItem('gh_token') || '';
 const STORES = [
   {name:'Intimissimi Iguatemi',short:'Iguatemi',  files:{2025:'2025-89-IGUATEMI.CSV',2026:'2026-89-IGUATEMI.CSV'},color:'#E91E8C'},
   {name:'Intimissimi RioMar',  short:'RioMar',    files:{2025:'2025-89-RIOMAR.CSV',  2026:'2026-89-RIOMAR.CSV'},  color:'#0099BB'},
@@ -538,7 +530,7 @@ function toggleTokenEdit(){
     inp.style.color = '#555';
     btn.textContent = '✏️ Editar';
     btn.style.color = '#555';
-    if(inp.value) sessionStorage.setItem('gh_token', inp.value);
+    if(inp.value) localStorage.setItem('gh_token', inp.value);
   }
 }
 
@@ -561,7 +553,7 @@ function openModal(){
   document.getElementById('modalOverlay').classList.add('open');
   // Always GitHub mode - restore token
   importMode = 'github';
-  const saved = sessionStorage.getItem('gh_token');
+  const saved = localStorage.getItem('gh_token');
   const tokenInp = document.getElementById('ghToken');
   if(saved){
     tokenInp.value = saved;
@@ -591,9 +583,9 @@ async function loadLocally(inputs){
 }
 
 async function uploadToGitHub(inputs){
-  const token = document.getElementById('ghToken').value.trim();
-  if(!token){showToast('❌ Informe o GitHub Token!','erro');return;}
-  sessionStorage.setItem('gh_token', token);
+  const token = GITHUB_TOKEN;
+  if(!token){showToast('❌ Token não configurado!','erro');return;}
+  // token fixo no código
   GITHUB_TOKEN = token;
 
   const prog = document.getElementById('uploadProgress');
