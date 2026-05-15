@@ -259,19 +259,44 @@ tr:hover td{background:rgba(0,0,0,0.015)}
 </div>
 
 <div class="modal-overlay" id="modalOverlay">
-  <div class="modal">
+  <div class="modal" style="max-width:580px;">
     <h2>📂 Importar Arquivos CSV</h2>
-    <p>Selecione os arquivos CSV de cada loja.</p>
+
+    <!-- Modo toggle -->
+    <div style="display:flex;gap:0;margin-bottom:20px;border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <button id="btnModeLocal" onclick="setImportMode('local')"
+        style="flex:1;border:none;border-radius:0;padding:9px;font-size:13px;font-weight:600;background:var(--rosa);color:#fff;cursor:pointer;">
+        💾 Temporário (sessão)
+      </button>
+      <button id="btnModeGithub" onclick="setImportMode('github')"
+        style="flex:1;border:none;border-radius:0;padding:9px;font-size:13px;font-weight:600;background:#f5f5f7;color:#555;cursor:pointer;">
+        ☁️ Salvar no GitHub
+      </button>
+    </div>
+
+    <!-- Token input (GitHub mode) -->
+    <div id="tokenSection" style="display:none;margin-bottom:16px;padding:14px;background:rgba(200,0,110,0.04);border:1px solid rgba(200,0,110,0.2);border-radius:10px;">
+      <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#555;display:block;margin-bottom:6px;">🔑 GitHub Personal Access Token</label>
+      <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+        value="" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font-b);font-size:13px;outline:none;">
+      <p style="font-size:11px;color:#888;margin-top:6px;">Token com permissão <strong>repo</strong>. Salvo na sessão. <a href="https://github.com/settings/tokens/new?scopes=repo&description=Dashboard" target="_blank" style="color:var(--rosa);">Criar token →</a></p>
+    </div>
+
+    <p id="importModeInfo" style="font-size:12px;color:#888;margin-bottom:14px;">Os dados ficam disponíveis apenas nesta sessão do navegador.</p>
     <div class="file-list" id="fileList"></div>
+    <div id="uploadProgress" style="display:none;margin-top:14px;"></div>
     <div class="modal-actions">
       <button onclick="closeModal()">Cancelar</button>
-      <button class="btn-primary" onclick="processFiles()">✔ Carregar</button>
+      <button class="btn-primary" id="btnImport" onclick="processFiles()">✔ Carregar</button>
     </div>
   </div>
 </div>
 
 <script>
 const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/lleollopes-web/CONTROLELOJAS/main/';
+const GITHUB_REPO   = 'lleollopes-web/CONTROLELOJAS';
+const GITHUB_BRANCH = 'main';
+let GITHUB_TOKEN = sessionStorage.getItem('gh_token') || '';
 const STORES = [
   {name:'Intimissimi Iguatemi',short:'Iguatemi',  files:{2025:'2025-89-IGUATEMI.CSV',2026:'2026-89-IGUATEMI.CSV'},color:'#E91E8C'},
   {name:'Intimissimi RioMar',  short:'RioMar',    files:{2025:'2025-89-RIOMAR.CSV',  2026:'2026-89-RIOMAR.CSV'},  color:'#0099BB'},
@@ -478,6 +503,33 @@ async function loadLogos(){
 }
 
 /* MODAL */
+let importMode = 'local';
+
+function setImportMode(mode){
+  importMode = mode;
+  const localBtn   = document.getElementById('btnModeLocal');
+  const githubBtn  = document.getElementById('btnModeGithub');
+  const tokenSec   = document.getElementById('tokenSection');
+  const infoEl     = document.getElementById('importModeInfo');
+  const btnImport  = document.getElementById('btnImport');
+  if(mode === 'github'){
+    localBtn.style.background  = '#f5f5f7'; localBtn.style.color  = '#555';
+    githubBtn.style.background = 'var(--rosa)'; githubBtn.style.color = '#fff';
+    tokenSec.style.display  = 'block';
+    infoEl.textContent = '☁️ Os arquivos serão enviados ao GitHub e ficarão salvos permanentemente.';
+    btnImport.textContent = '☁️ Enviar ao GitHub';
+    // Restore saved token
+    const saved = sessionStorage.getItem('gh_token');
+    if(saved) document.getElementById('ghToken').value = saved;
+  } else {
+    localBtn.style.background  = 'var(--rosa)'; localBtn.style.color  = '#fff';
+    githubBtn.style.background = '#f5f5f7'; githubBtn.style.color = '#555';
+    tokenSec.style.display  = 'none';
+    infoEl.textContent = '💾 Os dados ficam disponíveis apenas nesta sessão do navegador.';
+    btnImport.textContent = '✔ Carregar';
+  }
+}
+
 function openModal(){
   const fl=document.getElementById('fileList');
   fl.innerHTML='';
@@ -486,35 +538,123 @@ function openModal(){
     const loaded=rawData[slot.storeIdx+'_'+slot.year];
     const color=STORES[slot.storeIdx].color;
     fl.innerHTML+=`<label class="file-item" for="${id}" style="border-color:${loaded?color:''};">
-      <input type="file" id="${id}" accept=".csv" data-si="${slot.storeIdx}" data-year="${slot.year}">
+      <input type="file" id="${id}" accept=".csv" data-si="${slot.storeIdx}" data-year="${slot.year}" data-fname="${STORES[slot.storeIdx].files[slot.year]}">
       <div class="file-item-label"><strong>${slot.label}</strong><span>${STORES[slot.storeIdx].name}</span></div>
       <span class="file-item-status ${loaded?'f-loaded':'f-waiting'}">${loaded?'✔ Carregado':'Selecionar'}</span>
     </label>`;
   });
+  document.getElementById('uploadProgress').style.display='none';
+  document.getElementById('uploadProgress').innerHTML='';
   document.getElementById('modalOverlay').classList.add('open');
+  setImportMode('local');
 }
 function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
 async function processFiles(){
-  const inputs=document.querySelectorAll('#fileList input[type=file]');
+  const inputs=[...document.querySelectorAll('#fileList input[type=file]')].filter(i=>i.files[0]);
+  if(!inputs.length){closeModal();return;}
+
+  if(importMode === 'github'){
+    await uploadToGitHub(inputs);
+  } else {
+    await loadLocally(inputs);
+  }
+}
+
+async function loadLocally(inputs){
   const promises=[];
-  let count=0;
   inputs.forEach(inp=>{
-    if(inp.files[0]){
-      const si=+inp.dataset.si,year=+inp.dataset.year;
-      count++;
-      promises.push(new Promise(resolve=>{
-        Papa.parse(inp.files[0],{header:true,skipEmptyLines:true,encoding:'latin1',
-          complete:res=>{rawData[si+'_'+year]=res.data;resolve();}});
-      }));
-    }
+    const si=+inp.dataset.si,year=+inp.dataset.year;
+    promises.push(new Promise(resolve=>{
+      Papa.parse(inp.files[0],{header:true,skipEmptyLines:true,encoding:'latin1',
+        complete:res=>{rawData[si+'_'+year]=res.data;resolve();}});
+    }));
   });
-  if(!promises.length){closeModal();return;}
   await Promise.all(promises);
-  closeModal();
-  updateStatus();
-  applyFilters();
-  // Show success toast
-  showToast(`✅ ${count} arquivo(s) importado(s) com sucesso!`,'verde');
+  closeModal();updateStatus();applyFilters();
+  showToast(`✅ ${inputs.length} arquivo(s) carregado(s) na sessão!`,'verde');
+}
+
+async function uploadToGitHub(inputs){
+  const token = document.getElementById('ghToken').value.trim();
+  if(!token){showToast('❌ Informe o GitHub Token!','erro');return;}
+  sessionStorage.setItem('gh_token', token);
+  GITHUB_TOKEN = token;
+
+  const prog = document.getElementById('uploadProgress');
+  prog.style.display='block';
+  prog.innerHTML='<div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px;">Enviando para o GitHub...</div>';
+
+  let success=0, errors=0;
+
+  for(const inp of inputs){
+    const fname = inp.dataset.fname;
+    const si=+inp.dataset.si, year=+inp.dataset.year;
+    const file = inp.files[0];
+
+    prog.innerHTML += `<div id="prog_gh_${si}_${year}" style="font-size:12px;color:#888;margin-bottom:4px;">⏳ ${fname}...</div>`;
+
+    try {
+      // Read file as base64
+      const base64 = await new Promise((res,rej)=>{
+        const reader=new FileReader();
+        reader.onload=e=>res(e.target.result.split(',')[1]);
+        reader.onerror=rej;
+        reader.readAsDataURL(file);
+      });
+
+      // Get current file SHA (needed for update)
+      const shaRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${encodeURIComponent(fname)}?ref=${GITHUB_BRANCH}`,{
+        headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github.v3+json'}
+      });
+      let sha = null;
+      if(shaRes.ok){ const d=await shaRes.json(); sha=d.sha; }
+
+      // Upload file
+      const body = {
+        message:`Atualização: ${fname}`,
+        content: base64,
+        branch: GITHUB_BRANCH,
+      };
+      if(sha) body.sha = sha;
+
+      const upRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${encodeURIComponent(fname)}`,{
+        method:'PUT',
+        headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      });
+
+      if(upRes.ok){
+        success++;
+        document.getElementById(`prog_gh_${si}_${year}`).innerHTML=`✅ ${fname} — enviado!`;
+        document.getElementById(`prog_gh_${si}_${year}`).style.color='var(--verde)';
+        // Also load locally
+        await new Promise(resolve=>{
+          Papa.parse(file,{header:true,skipEmptyLines:true,encoding:'latin1',
+            complete:res=>{rawData[si+'_'+year]=res.data;resolve();}});
+        });
+      } else {
+        const err=await upRes.json();
+        errors++;
+        document.getElementById(`prog_gh_${si}_${year}`).innerHTML=`❌ ${fname} — erro: ${err.message}`;
+        document.getElementById(`prog_gh_${si}_${year}`).style.color='var(--coral)';
+      }
+    } catch(e){
+      errors++;
+      document.getElementById(`prog_gh_${si}_${year}`).innerHTML=`❌ ${fname} — erro de conexão`;
+      document.getElementById(`prog_gh_${si}_${year}`).style.color='var(--coral)';
+    }
+  }
+
+  if(success>0){
+    updateStatus();applyFilters();
+    setTimeout(()=>{
+      closeModal();
+      showToast(`☁️ ${success} arquivo(s) enviado(s) ao GitHub com sucesso!`,'verde');
+    },1500);
+  }
+  if(errors>0){
+    showToast(`⚠️ ${errors} arquivo(s) com erro. Verifique o token.`,'erro');
+  }
 }
 
 function showToast(msg, tipo){
