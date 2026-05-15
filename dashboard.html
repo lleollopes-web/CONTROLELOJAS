@@ -633,22 +633,23 @@ function renderDashboard(rows){
 
   // SubGrupo chart
   const bySGChart={};
-  rows.forEach(r=>{const sg=(r.SUBGRUPO_PRODUTO||'').trim();if(!sg||sg==='NO SAP')return;if(!bySGChart[sg])bySGChart[sg]=0;bySGChart[sg]+=parseBR(r.VALOR_LIQUIDO_VENDA);});
+  rows.forEach(r=>{const sg=(r.SUBGRUPO_PRODUTO||'').trim().replace(/\s+/g,' ');if(!sg||sg==='NO SAP')return;if(!bySGChart[sg])bySGChart[sg]=0;bySGChart[sg]+=parseBR(r.VALOR_LIQUIDO_VENDA);});
 
-  // SubGrupo table — exclui NO SAP, agrupa por código+descrição
+  // SubGrupo table — agrupa por COD+DESC+COR
   const bySGTable={};
   rows.forEach(r=>{
-    const sg=(r.SUBGRUPO_PRODUTO||'').trim(),p=(r.DESC_PRODUTO||'').trim();
-    const cod=(r.PRODUTO||'').trim(),cor=(r.COR_PRODUTO||'').trim();
+    const sg=(r.SUBGRUPO_PRODUTO||'').trim().replace(/\s+/g,' ');
+    const p=(r.DESC_PRODUTO||'').trim().replace(/\s+/g,' ');
+    const cod=(r.PRODUTO||'').trim();
+    const cor=(r.COR_PRODUTO||'').trim();
     if(!sg||!p||sg==='NO SAP'||sg===''||p==='NO SAP') return;
-    // Exclude zero-value records
     const val=parseBR(r.VALOR_LIQUIDO_VENDA);
     const qtd=+r.QTDE_LIQUIDA||0;
     if(val<=0&&qtd<=0) return;
     if(!bySGTable[sg])bySGTable[sg]={};
-    // Group by cod+desc for unique product identity
-    const key=cod?`${cod}|${p}`:`${p}`;
-    if(!bySGTable[sg][key])bySGTable[sg][key]={qtde:0,val:0,cod,cor,desc:p};
+    // Chave: código + descrição + cor
+    const key=`${cod}|${p}|${cor}`;
+    if(!bySGTable[sg][key])bySGTable[sg][key]={qtde:0,val:0,cod,desc:p,cor};
     bySGTable[sg][key].qtde+=qtd;
     bySGTable[sg][key].val+=val;
   });
@@ -761,8 +762,8 @@ function renderDashboard(rows){
           ${i===0?`<td rowspan="${items.length}" style="font-weight:700;font-size:12px;vertical-align:middle;padding:14px 16px;color:${PALETTE[gi%PALETTE.length]};border-right:3px solid ${PALETTE[gi%PALETTE.length]};background:${BG_LIST[gi%BG_LIST.length]};">${sub}</td>`:''}
           <td class="rank">${i+1}</td>
           <td style="font-family:monospace;font-size:11px;color:#777;">${v.cod||'—'}</td>
-          <td><span class="pill pill-amber" style="font-size:10px;">${v.cor||'—'}</span></td>
-          <td style="font-weight:500;">${v.desc}</td>
+          <td><span class="pill pill-amber" style="font-size:10px;font-weight:700;">${v.cor||'—'}</span></td>
+          <td style="font-weight:500;color:#111;">${v.desc}</td>
           <td><strong>${fmtN(v.qtde)}</strong></td>
           <td>${fmtBRL(v.val)}</td>
         </tr>`).join('')).join('')}</tbody></table>
