@@ -1055,19 +1055,21 @@ function renderDashboard(rows){
         <th>Peças (Líq.)</th>
         <th>Nº Tickets</th>
         <th>Ticket Médio</th>
+        <th>Peças / Ticket</th>
         <th>% Faturamento</th>
       </tr></thead>
       <tbody>${topVend.map(([v,d],i)=>{
         const pct = fat ? ((d.val/fat)*100).toFixed(1)+'%' : '—';
-        const rankColor = i===0?'#FFD700':i===1?'#C0C0C0':i===2?'#CD7F32':'';
+        const pecasTicket = d.tix ? (d.qtde/d.tix).toFixed(1) : '—';
         return `<tr>
-          <td class="rank">${rankColor?`<span style="font-size:16px;">${i===0?'🥇':i===1?'🥈':'🥉'}</span>`:(i+1)}</td>
+          <td class="rank">${i<3?`<span style="font-size:16px;">${i===0?'🥇':i===1?'🥈':'🥉'}</span>`:(i+1)}</td>
           <td style="font-weight:700;color:#111;">${v}</td>
           <td><strong style="color:var(--rosa);">${fmtBRL(d.val)}</strong></td>
           <td>${fmtN(d.qtde)}</td>
           <td style="color:#555;">${fmtN(d.tix)}</td>
           <td style="color:#555;">${fmtBRL(d.ticketM)}</td>
-          <td><span class="pill ${i<3?'pill-rosa':'pill-verde'}">${pct}</span></td>
+          <td style="color:#555;font-weight:600;">${pecasTicket}</td>
+          <td><span class="pill pill-verde">${pct}</span></td>
         </tr>`;
       }).join('')}</tbody></table>
     </div>
