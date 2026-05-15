@@ -459,8 +459,14 @@ async function autoLoadGitHub(){
       }catch{errors++;}
     }
   }
-  if(loaded){updateStatus();setTimeout(()=>applyFilters(),100);}
-  else setStatus('error','⚠️ Não foi possível carregar do GitHub.');
+  if(loaded){
+    updateStatus();
+    setTimeout(()=>applyFilters(),100);
+    showToast(`✅ ${loaded} arquivo(s) carregado(s) do GitHub com sucesso!`,'verde');
+  } else {
+    setStatus('error','⚠️ Não foi possível carregar do GitHub.');
+    showToast('❌ Erro ao carregar dados do GitHub.','erro');
+  }
 }
 async function loadFromGitHub(){rawData={};await autoLoadGitHub();}
 
@@ -491,9 +497,11 @@ function closeModal(){document.getElementById('modalOverlay').classList.remove('
 async function processFiles(){
   const inputs=document.querySelectorAll('#fileList input[type=file]');
   const promises=[];
+  let count=0;
   inputs.forEach(inp=>{
     if(inp.files[0]){
       const si=+inp.dataset.si,year=+inp.dataset.year;
+      count++;
       promises.push(new Promise(resolve=>{
         Papa.parse(inp.files[0],{header:true,skipEmptyLines:true,encoding:'latin1',
           complete:res=>{rawData[si+'_'+year]=res.data;resolve();}});
@@ -502,7 +510,47 @@ async function processFiles(){
   });
   if(!promises.length){closeModal();return;}
   await Promise.all(promises);
-  closeModal();updateStatus();applyFilters();
+  closeModal();
+  updateStatus();
+  applyFilters();
+  // Show success toast
+  showToast(`✅ ${count} arquivo(s) importado(s) com sucesso!`,'verde');
+}
+
+function showToast(msg, tipo){
+  // Remove existing toast
+  const existing=document.getElementById('toast');
+  if(existing)existing.remove();
+  const color = tipo==='verde' ? '#00915A' : tipo==='erro' ? '#E8003A' : '#C8006E';
+  const bg    = tipo==='verde' ? 'rgba(0,145,90,0.1)' : tipo==='erro' ? 'rgba(232,0,58,0.1)' : 'rgba(200,0,110,0.1)';
+  const border= tipo==='verde' ? 'rgba(0,145,90,0.3)' : tipo==='erro' ? 'rgba(232,0,58,0.3)' : 'rgba(200,0,110,0.3)';
+  const toast=document.createElement('div');
+  toast.id='toast';
+  toast.innerHTML=msg;
+  toast.style.cssText=`
+    position:fixed;bottom:32px;right:32px;z-index:9999;
+    background:#fff;border:1px solid ${border};border-left:4px solid ${color};
+    border-radius:12px;padding:14px 20px;
+    font-family:DM Sans,sans-serif;font-size:14px;font-weight:600;color:${color};
+    box-shadow:0 8px 32px rgba(0,0,0,0.12);
+    animation:slideIn .3s ease;
+    max-width:340px;
+  `;
+  // Add animation
+  if(!document.getElementById('toastStyle')){
+    const style=document.createElement('style');
+    style.id='toastStyle';
+    style.textContent=`
+      @keyframes slideIn{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:translateX(0)}}
+      @keyframes slideOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(60px)}}
+    `;
+    document.head.appendChild(style);
+  }
+  document.body.appendChild(toast);
+  setTimeout(()=>{
+    toast.style.animation='slideOut .3s ease forwards';
+    setTimeout(()=>toast.remove(),300);
+  },3500);
 }
 
 /* FILTERS */
