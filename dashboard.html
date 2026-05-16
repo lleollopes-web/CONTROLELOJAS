@@ -146,13 +146,13 @@ tr:hover td{background:rgba(0,0,0,0.015)}
 .modal h2{font-family:var(--font-d);font-size:22px;margin-bottom:8px}
 .modal p{color:#666;font-size:13px;margin-bottom:24px}
 .file-list{display:flex;flex-direction:column;gap:12px}
-.file-item{background:#f8f8fc;border:1px dashed var(--border);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:.2s}
+.file-item{background:#f8f8fc;border:1px dashed var(--border);border-radius:8px;padding:7px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:.2s}
 .file-item:hover{border-color:var(--rosa);border-style:solid}
 .file-item input{display:none}
 .file-item-label{flex:1}
-.file-item-label strong{display:block;font-size:13px}
-.file-item-label span{font-size:11px;color:#888}
-.file-item-status{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
+.file-item-label strong{display:block;font-size:12px}
+.file-item-label span{font-size:10px;color:#888}
+.file-item-status{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px}
 .f-waiting{background:rgba(0,0,0,0.05);color:#888}
 .f-loaded{background:rgba(0,145,90,0.12);color:var(--verde)}
 .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}
@@ -260,22 +260,15 @@ tr:hover td{background:rgba(0,0,0,0.015)}
 </div>
 
 <div class="modal-overlay" id="modalOverlay">
-  <div class="modal" style="max-width:480px;">
-    <h2>📂 Importar Arquivos CSV</h2>
-
-    <!-- Sempre modo GitHub -->
-
-    <!-- Token configurado no código -->
-    <div style="margin-bottom:12px;padding:10px 14px;background:rgba(0,145,90,0.06);border:1px solid rgba(0,145,90,0.2);border-radius:10px;display:flex;align-items:center;gap:8px;">
-      <span style="font-size:16px;">✅</span>
-      <span style="font-size:12px;font-weight:600;color:#00915A;">Conexão com GitHub configurada</span>
+  <div class="modal" style="max-width:440px;padding:20px 24px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <h2 style="font-size:18px;">📂 Importar CSVs</h2>
+      <span style="font-size:11px;font-weight:600;color:#00915A;background:rgba(0,145,90,0.08);border:1px solid rgba(0,145,90,0.2);border-radius:20px;padding:3px 10px;">✅ GitHub conectado</span>
     </div>
     <input type="hidden" id="ghToken" value="">
-
-    <p style="font-size:12px;color:#888;margin-bottom:14px;">☁️ Os arquivos serão enviados ao GitHub e ficarão salvos permanentemente.</p>
     <div class="file-list" id="fileList"></div>
-    <div id="uploadProgress" style="display:none;margin-top:14px;"></div>
-    <div class="modal-actions">
+    <div id="uploadProgress" style="display:none;margin-top:10px;"></div>
+    <div class="modal-actions" style="margin-top:16px;">
       <button onclick="closeModal()">Cancelar</button>
       <button class="btn-primary" id="btnImport" onclick="processFiles()">☁️ Enviar ao GitHub</button>
     </div>
