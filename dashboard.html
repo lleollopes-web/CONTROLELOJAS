@@ -146,7 +146,7 @@ tr:hover td{background:rgba(0,0,0,0.015)}
 .modal h2{font-family:var(--font-d);font-size:22px;margin-bottom:8px}
 .modal p{color:#666;font-size:13px;margin-bottom:24px}
 .file-list{display:flex;flex-direction:column;gap:12px}
-.file-item{background:#f8f8fc;border:1px dashed var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:.2s}
+.file-item{background:#f8f8fc;border:1px dashed var(--border);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:.2s}
 .file-item:hover{border-color:var(--rosa);border-style:solid}
 .file-item input{display:none}
 .file-item-label{flex:1}
@@ -260,7 +260,7 @@ tr:hover td{background:rgba(0,0,0,0.015)}
 </div>
 
 <div class="modal-overlay" id="modalOverlay">
-  <div class="modal" style="max-width:580px;">
+  <div class="modal" style="max-width:480px;">
     <h2>📂 Importar Arquivos CSV</h2>
 
     <!-- Sempre modo GitHub -->
@@ -906,15 +906,13 @@ function renderDashboard(rows){
     .filter(([v,d])=>d.val!==0||d.qtde!==0)
     .sort((a,b)=>b[1].val-a[1].val).slice(0,15);
 
-  // YoY — compara o mesmo filtro atual entre 2025 e 2026
+  // YoY — compara até a última data disponível de 2026
   const yr=document.getElementById('yearSel').value;
   const mnthYoy=document.getElementById('monthSel').value;
   const fromValYoy=(document.getElementById('dateFrom')?.value||'').trim();
   const toValYoy=(document.getElementById('dateTo')?.value||'').trim();
   let yoyHtml='';
 
-  // Só mostra se "Todos os Anos" estiver selecionado (sem filtro de ano específico)
-  // e se tivermos dados dos dois anos
   const has2025=Object.keys(rawData).some(k=>k.endsWith('_2025'));
   const has2026=Object.keys(rawData).some(k=>k.endsWith('_2026'));
 
@@ -922,36 +920,54 @@ function renderDashboard(rows){
     const sf=activeStore==='all'?[0,1,2]:[+activeStore];
     const r25=[],r26=[];
 
+    // Find last date available in 2026
+    let lastDate2026 = null;
     sf.forEach(si=>{
-      // 2025: aplica mesmo filtro de mês
-      (rawData[si+'_2025']||[]).forEach(r=>{
-        if(mnthYoy!=='all'){
-          const dt=parseDate(r.DATA_VENDA);
-          if(dt&&(dt.getMonth()+1)===+mnthYoy) r25.push(r);
-        } else {
-          r25.push(r);
-        }
-      });
-      // 2026: aplica mesmo filtro de mês
       (rawData[si+'_2026']||[]).forEach(r=>{
-        if(mnthYoy!=='all'){
-          const dt=parseDate(r.DATA_VENDA);
-          if(dt&&(dt.getMonth()+1)===+mnthYoy) r26.push(r);
-        } else {
-          r26.push(r);
-        }
+        const dt=parseDate(r.DATA_VENDA);
+        if(dt&&(!lastDate2026||dt>lastDate2026)) lastDate2026=dt;
       });
     });
 
-    if(r25.length&&r26.length){
-      const f25=r25.reduce((a,r)=>a+parseBR(r.VALOR_LIQUIDO_VENDA),0);
-      const f26=r26.reduce((a,r)=>a+parseBR(r.VALOR_LIQUIDO_VENDA),0);
-      const pct=f25?((f26-f25)/f25*100):0;
-      const color=pct>=0?'var(--verde)':'var(--coral)';
-      const periodoLabel=mnthYoy!=='all'
-        ? `${['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][+mnthYoy]} 2025 vs 2026`
-        : 'Total 2025 vs 2026';
-      yoyHtml=`<div class="kpi-card d5" style="border-top:3px solid ${color};"><div class="kpi-icon">📈</div><div class="kpi-label">${periodoLabel}</div><div class="kpi-value" style="font-size:26px;color:${color};">${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(1)}%</div><div class="kpi-sub">${fmtBRL(f25)} → ${fmtBRL(f26)}</div></div>`;
+    if(lastDate2026){
+      // Compare same period in 2025: Jan 1 to same day/month as last 2026 date
+      const lastMonth26 = lastDate2026.getMonth()+1;
+      const lastDay26   = lastDate2026.getDate();
+      const cutoff25    = new Date(2025, lastDate2026.getMonth(), lastDate2026.getDate(), 23, 59, 59);
+
+      sf.forEach(si=>{
+        (rawData[si+'_2025']||[]).forEach(r=>{
+          const dt=parseDate(r.DATA_VENDA);
+          if(!dt) return;
+          // Same period 2025: from start up to same month/day
+          if(mnthYoy!=='all'){
+            if(dt.getMonth()+1===+mnthYoy) r25.push(r);
+          } else {
+            if(dt<=cutoff25) r25.push(r);
+          }
+        });
+        (rawData[si+'_2026']||[]).forEach(r=>{
+          const dt=parseDate(r.DATA_VENDA);
+          if(!dt) return;
+          if(mnthYoy!=='all'){
+            if(dt.getMonth()+1===+mnthYoy) r26.push(r);
+          } else {
+            r26.push(r);
+          }
+        });
+      });
+
+      if(r25.length&&r26.length){
+        const f25=r25.reduce((a,r)=>a+parseBR(r.VALOR_LIQUIDO_VENDA),0);
+        const f26=r26.reduce((a,r)=>a+parseBR(r.VALOR_LIQUIDO_VENDA),0);
+        const pct=f25?((f26-f25)/f25*100):0;
+        const color=pct>=0?'var(--verde)':'var(--coral)';
+        const lastStr=lastDate2026.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+        const periodoLabel=mnthYoy!=='all'
+          ? `${['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][+mnthYoy]}: 2025 vs 2026`
+          : `Jan–${lastStr}: 2025 vs 2026`;
+        yoyHtml=`<div class="kpi-card d5" style="border-top:3px solid ${color};"><div class="kpi-icon">📈</div><div class="kpi-label">${periodoLabel}</div><div class="kpi-value" style="font-size:24px;color:${color};">${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(1)}%</div><div class="kpi-sub" style="font-size:11px;">${fmtBRL(f25)} → ${fmtBRL(f26)}</div></div>`;
+      }
     }
   }
 
