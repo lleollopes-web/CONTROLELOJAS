@@ -530,30 +530,45 @@ function toggleTokenEdit(){
 
 function openModal(){
   const fl=document.getElementById('fileList');
-  fl.innerHTML='';
-  fileSlots.forEach(slot=>{
+  const slots25=fileSlots.filter(s=>s.year===2025);
+  const slots26=fileSlots.filter(s=>s.year===2026);
+
+  const buildItem=slot=>{
     const id='inp_'+slot.key;
     const loaded=rawData[slot.storeIdx+'_'+slot.year];
     const color=STORES[slot.storeIdx].color;
-    fl.innerHTML+=`<label class="file-item" id="lbl_${id}" for="${id}" style="border-color:${loaded?color:''};transition:all .2s;">
-      <input type="file" id="${id}" accept=".csv" data-si="${slot.storeIdx}" data-year="${slot.year}" data-fname="${STORES[slot.storeIdx].files[slot.year]}"
-        onchange="onFileSelected('${id}','${color}')">
-      <div class="file-item-label"><strong>${slot.label}</strong><span id="fname_${id}" style="font-size:11px;color:#888;">${STORES[slot.storeIdx].name}</span></div>
-      <span class="file-item-status ${loaded?'f-loaded':'f-waiting'}" id="status_${id}">${loaded?'✔ Carregado':'Selecionar'}</span>
+    return `<label class="file-item" id="lbl_${id}" for="${id}"
+      style="border-color:${loaded?color:''};transition:all .2s;margin-bottom:6px;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:#f8f8fc;border:1px dashed var(--border);cursor:pointer;">
+      <input type="file" id="${id}" accept=".csv"
+        data-si="${slot.storeIdx}" data-year="${slot.year}"
+        data-fname="${STORES[slot.storeIdx].files[slot.year]}"
+        onchange="onFileSelected('${id}','${color}')" style="display:none;">
+      <div style="flex:1;">
+        <strong style="font-size:12px;display:block;">${STORES[slot.storeIdx].short}</strong>
+        <span id="fname_${id}" style="font-size:10px;color:#888;">${STORES[slot.storeIdx].name}</span>
+      </div>
+      <span class="file-item-status ${loaded?'f-loaded':'f-waiting'}" id="status_${id}"
+        style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;">
+        ${loaded?'✔ OK':'Selec.'}
+      </span>
     </label>`;
-  });
+  };
+
+  fl.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+    <div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--rosa);margin-bottom:8px;text-align:center;padding:4px;background:rgba(200,0,110,0.06);border-radius:6px;">📅 2025</div>
+      ${slots25.map(buildItem).join('')}
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--cyan);margin-bottom:8px;text-align:center;padding:4px;background:rgba(0,153,187,0.06);border-radius:6px;">📅 2026</div>
+      ${slots26.map(buildItem).join('')}
+    </div>
+  </div>`;
+
   document.getElementById('uploadProgress').style.display='none';
   document.getElementById('uploadProgress').innerHTML='';
   document.getElementById('modalOverlay').classList.add('open');
-  // Always GitHub mode - restore token
-  importMode = 'github';
-  const saved = localStorage.getItem('gh_token');
-  const tokenInp = document.getElementById('ghToken');
-  if(saved){
-    tokenInp.value = saved;
-    const status = document.getElementById('tokenStatus');
-    if(status) status.textContent = '✅ Configurado';
-  }
+  importMode='github';
 }
 function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
 async function processFiles(){
