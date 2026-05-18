@@ -1001,7 +1001,7 @@ function renderDashboard(rows){
       <div class="chart-card d3"><div class="chart-title">Mix por Público</div><div style="height:260px;"><canvas id="cCat"></canvas></div></div>
     </div>
     <div class="chart-grid" style="grid-template-columns:1fr;">
-      <div class="chart-card d2"><div class="chart-title">Mix por Subgrupo (Faturamento)</div><div style="height:300px;"><canvas id="cSG"></canvas></div></div>
+      <div class="chart-card d2"><div class="chart-title">Mix por Subgrupo (Faturamento)</div><div style="height:360px;"><canvas id="cSG"></canvas></div></div>
     </div>
     ${activeStore==='all'?`<div class="chart-grid"><div class="chart-card d3" style="grid-column:1/-1;"><div class="chart-title">Faturamento por Loja</div><div style="height:220px;"><canvas id="cStore"></canvas></div></div></div>`:''}
 
@@ -1116,10 +1116,49 @@ const doughnutPctPlugin = {
 };
 Chart.register(doughnutPctPlugin);
 
-const dOpts=()=>({responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'right',labels:{color:'#555',font:{family:'DM Sans',size:11},boxWidth:12}},
+// Função auxiliar para gerar labels com percentual
+const makeLegendWithPct=(labels,data)=>{
+  const total=data.reduce((a,b)=>a+b,0);
+  return labels.map((l,i)=>{
+    const pct=total?((data[i]/total)*100).toFixed(1):'0.0';
+    return `${l}  ${pct}%`;
+  });
+};
+
+const dOpts=(labels,data)=>{
+  const legendLabels = (labels&&data) ? makeLegendWithPct(labels,data) : labels||[];
+  return {responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'right',labels:{color:'#444',font:{family:'DM Sans',size:13},boxWidth:14,padding:10,
+      generateLabels:(chart)=>{
+        const ds=chart.data.datasets[0];
+        const tot=ds.data.reduce((a,b)=>a+b,0);
+        return chart.data.labels.map((lbl,i)=>{
+          const pct=tot?((ds.data[i]/tot)*100).toFixed(1):'0.0';
+          return {text:`${lbl}  ${pct}%`,fillStyle:ds.backgroundColor[i]||PALETTE[i%PALETTE.length],strokeStyle:'#fff',lineWidth:1,index:i,hidden:false};
+        });
+      }
+    }},
     tooltip:{backgroundColor:'rgba(255,255,255,0.98)',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,titleColor:'#111',bodyColor:'#555',padding:12,cornerRadius:10,
-      callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return ` ${ctx.label}: ${fmtBRL(ctx.raw)} (${t?((ctx.raw/t)*100).toFixed(1):0}%)`;}}}}});
+      callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return ` ${ctx.label}: ${fmtBRL(ctx.raw)} (${t?((ctx.raw/t)*100).toFixed(1):0}%)`;}}}}};
+};
+
+const dOptsSG=(labels,data)=>{
+  return {responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'right',maxWidth:340,labels:{color:'#444',font:{family:'DM Sans',size:12},boxWidth:13,padding:8,
+      generateLabels:(chart)=>{
+        const ds=chart.data.datasets[0];
+        const tot=ds.data.reduce((a,b)=>a+b,0);
+        return chart.data.labels.map((lbl,i)=>{
+          const pct=tot?((ds.data[i]/tot)*100).toFixed(1):'0.0';
+          return {text:`${lbl}  ${pct}%`,fillStyle:ds.backgroundColor[i]||PALETTE[i%PALETTE.length],strokeStyle:'#fff',lineWidth:1,index:i,hidden:false};
+        });
+      }
+    }},
+    tooltip:{backgroundColor:'rgba(255,255,255,0.98)',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,titleColor:'#111',bodyColor:'#555',padding:12,cornerRadius:10,
+      callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return ` ${ctx.label}: ${fmtBRL(ctx.raw)} (${t?((ctx.raw/t)*100).toFixed(1):0}%)`;}}}},
+    layout:{padding:{right:10}}
+  };
+};
 
   // Monthly
   const cM=document.getElementById('cMonth');
@@ -1135,16 +1174,23 @@ const dOpts=()=>({responsive:true,maintainAspectRatio:false,
   }
 
   const gKeys=Object.keys(byGrupo);
+  const gData=gKeys.map(k=>byGrupo[k]);
   const cG=document.getElementById('cGrupo');
-  if(cG)charts.grupo=new Chart(cG,{type:'doughnut',data:{labels:gKeys,datasets:[{data:gKeys.map(k=>byGrupo[k]),backgroundColor:PALETTE,borderWidth:2,borderColor:'#fff',hoverOffset:6}]},options:dOpts()});
+  if(cG)charts.grupo=new Chart(cG,{type:'doughnut',data:{labels:gKeys,datasets:[{data:gData,backgroundColor:PALETTE,borderWidth:2,borderColor:'#fff',hoverOffset:6}]},options:dOpts(gKeys,gData)});
 
+  const catKeys=Object.keys(byCat);
+  const catData=Object.values(byCat);
+  const catColors=['#E91E8C','#0099BB','#D4900A','#06D6A0','#7B61FF','#FF4D6D'];
   const cCt=document.getElementById('cCat');
-  if(cCt)charts.cat=new Chart(cCt,{type:'doughnut',data:{labels:Object.keys(byCat),datasets:[{data:Object.values(byCat),backgroundColor:['#E91E8C','#0099BB','#D4900A'],borderWidth:2,borderColor:'#fff',hoverOffset:6}]},options:dOpts()});
+  if(cCt)charts.cat=new Chart(cCt,{type:'doughnut',data:{labels:catKeys,datasets:[{data:catData,backgroundColor:catColors,borderWidth:2,borderColor:'#fff',hoverOffset:6}]},options:dOpts(catKeys,catData)});
 
   const sgE=Object.entries(bySGChart).sort((a,b)=>b[1]-a[1]);
+  const sgLabels=sgE.map(([k])=>k);
+  const sgData=sgE.map(([,v])=>v);
+  const sgColors=PALETTE.concat(['#FF6BBE','#00B4D8','#F77F00','#4CC9F0','#06D6A0','#7B61FF']).slice(0,sgE.length);
   const cSg=document.getElementById('cSG');
-  if(cSg)charts.sg=new Chart(cSg,{type:'doughnut',data:{labels:sgE.map(([k])=>k),datasets:[{data:sgE.map(([,v])=>v),backgroundColor:PALETTE.slice(0,sgE.length),borderWidth:2,borderColor:'#fff',hoverOffset:8}]},
-    options:{...dOpts(),plugins:{...dOpts().plugins,legend:{position:'right',labels:{color:'#555',font:{family:'DM Sans',size:10},boxWidth:10,padding:6}}}}});
+  if(cSg)charts.sg=new Chart(cSg,{type:'doughnut',data:{labels:sgLabels,datasets:[{data:sgData,backgroundColor:sgColors,borderWidth:2,borderColor:'#fff',hoverOffset:8}]},
+    options:{...dOptsSG(sgLabels,sgData),plugins:{...dOptsSG(sgLabels,sgData).plugins}}});
 
   const cSt=document.getElementById('cStore');
   if(cSt){
