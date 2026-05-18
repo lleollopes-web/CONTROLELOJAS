@@ -294,7 +294,7 @@ tr:hover td{background:rgba(0,0,0,0.015)}
 const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/lleollopes-web/CONTROLELOJAS/main/';
 const GITHUB_REPO   = 'lleollopes-web/CONTROLELOJAS';
 const GITHUB_BRANCH = 'main';
-let GITHUB_TOKEN = localStorage.getItem('gh_token') || window.__GH_TOKEN__ || '';
+let GITHUB_TOKEN = window.__GH_TOKEN__ || localStorage.getItem('gh_token') || '';
 const STORES = [
   {name:'Intimissimi Iguatemi',short:'Iguatemi',  files:{2025:'2025-89-IGUATEMI.CSV',2026:'2026-89-IGUATEMI.CSV'},color:'#E91E8C'},
   {name:'Intimissimi RioMar',  short:'RioMar',    files:{2025:'2025-89-RIOMAR.CSV',  2026:'2026-89-RIOMAR.CSV'},  color:'#0099BB'},
