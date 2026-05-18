@@ -1141,16 +1141,20 @@ const sortedLabels = (chart) => {
 
 const dOpts=(labels,data)=>{
   return {responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'right',labels:{...sharedLegendCfg,generateLabels:sortedLabels}},
-    tooltip:{backgroundColor:'rgba(255,255,255,0.98)',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,titleColor:'#111',bodyColor:'#555',padding:12,cornerRadius:10,
-      callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return ` ${ctx.label}: ${fmtBRL(ctx.raw)} (${t?((ctx.raw/t)*100).toFixed(1):0}%)`;}}}}}};
+    plugins:{
+      legend:{position:'right',labels:{...sharedLegendCfg,generateLabels:sortedLabels}},
+      tooltip:{backgroundColor:'rgba(255,255,255,0.98)',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,titleColor:'#111',bodyColor:'#555',padding:12,cornerRadius:10,
+        callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return ` ${ctx.label}: ${fmtBRL(ctx.raw)} (${t?((ctx.raw/t)*100).toFixed(1):0}%)`;}}}
+    }};
 };
 
 const dOptsSG=(labels,data)=>{
   return {responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'right',labels:{...sharedLegendCfg,generateLabels:sortedLabels}},
-    tooltip:{backgroundColor:'rgba(255,255,255,0.98)',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,titleColor:'#111',bodyColor:'#555',padding:12,cornerRadius:10,
-      callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return ` ${ctx.label}: ${fmtBRL(ctx.raw)} (${t?((ctx.raw/t)*100).toFixed(1):0}%)`;}}}}},
+    plugins:{
+      legend:{position:'right',labels:{...sharedLegendCfg,generateLabels:sortedLabels}},
+      tooltip:{backgroundColor:'rgba(255,255,255,0.98)',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,titleColor:'#111',bodyColor:'#555',padding:12,cornerRadius:10,
+        callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return ` ${ctx.label}: ${fmtBRL(ctx.raw)} (${t?((ctx.raw/t)*100).toFixed(1):0}%)`;}}}
+    },
     layout:{padding:{top:10,bottom:10}}
   };
 };
