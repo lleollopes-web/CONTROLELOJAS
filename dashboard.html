@@ -1125,38 +1125,33 @@ const makeLegendWithPct=(labels,data)=>{
   });
 };
 
+// Shared legend style for all doughnut charts
+const sharedLegendCfg = {color:'#333',font:{family:'DM Sans',size:13},boxWidth:14,padding:11};
+// Helper: sorted generateLabels (largest first)
+const sortedLabels = (chart) => {
+  const ds = chart.data.datasets[0];
+  const tot = ds.data.reduce((a,b)=>a+b,0);
+  const indices = [...Array(chart.data.labels.length).keys()].sort((a,b)=>ds.data[b]-ds.data[a]);
+  return indices.map(i => {
+    const lbl = chart.data.labels[i];
+    const pct = tot ? ((ds.data[i]/tot)*100).toFixed(1) : '0.0';
+    return {text:`${lbl}  ${pct}%`,fillStyle:ds.backgroundColor[i]||PALETTE[i%PALETTE.length],strokeStyle:'#fff',lineWidth:1,index:i,hidden:false};
+  });
+};
+
 const dOpts=(labels,data)=>{
-  const legendLabels = (labels&&data) ? makeLegendWithPct(labels,data) : labels||[];
   return {responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'right',labels:{color:'#444',font:{family:'DM Sans',size:13},boxWidth:14,padding:10,
-      generateLabels:(chart)=>{
-        const ds=chart.data.datasets[0];
-        const tot=ds.data.reduce((a,b)=>a+b,0);
-        return chart.data.labels.map((lbl,i)=>{
-          const pct=tot?((ds.data[i]/tot)*100).toFixed(1):'0.0';
-          return {text:`${lbl}  ${pct}%`,fillStyle:ds.backgroundColor[i]||PALETTE[i%PALETTE.length],strokeStyle:'#fff',lineWidth:1,index:i,hidden:false};
-        });
-      }
-    }},
+    plugins:{legend:{position:'right',labels:{...sharedLegendCfg,generateLabels:sortedLabels}},
     tooltip:{backgroundColor:'rgba(255,255,255,0.98)',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,titleColor:'#111',bodyColor:'#555',padding:12,cornerRadius:10,
-      callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return ` ${ctx.label}: ${fmtBRL(ctx.raw)} (${t?((ctx.raw/t)*100).toFixed(1):0}%)`;}}}}};
+      callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return ` ${ctx.label}: ${fmtBRL(ctx.raw)} (${t?((ctx.raw/t)*100).toFixed(1):0}%)`;}}}}}};
 };
 
 const dOptsSG=(labels,data)=>{
   return {responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'right',maxWidth:260,labels:{color:'#444',font:{family:'DM Sans',size:11},boxWidth:12,padding:7,
-      generateLabels:(chart)=>{
-        const ds=chart.data.datasets[0];
-        const tot=ds.data.reduce((a,b)=>a+b,0);
-        return chart.data.labels.map((lbl,i)=>{
-          const pct=tot?((ds.data[i]/tot)*100).toFixed(1):'0.0';
-          return {text:`${lbl}  ${pct}%`,fillStyle:ds.backgroundColor[i]||PALETTE[i%PALETTE.length],strokeStyle:'#fff',lineWidth:1,index:i,hidden:false};
-        });
-      }
-    }},
+    plugins:{legend:{position:'right',labels:{...sharedLegendCfg,generateLabels:sortedLabels}},
     tooltip:{backgroundColor:'rgba(255,255,255,0.98)',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,titleColor:'#111',bodyColor:'#555',padding:12,cornerRadius:10,
-      callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return ` ${ctx.label}: ${fmtBRL(ctx.raw)} (${t?((ctx.raw/t)*100).toFixed(1):0}%)`;}}}},
-    layout:{padding:{right:0,top:10,bottom:10}}
+      callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return ` ${ctx.label}: ${fmtBRL(ctx.raw)} (${t?((ctx.raw/t)*100).toFixed(1):0}%)`;}}}}},
+    layout:{padding:{top:10,bottom:10}}
   };
 };
 
