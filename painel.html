@@ -1123,6 +1123,131 @@ function renderDashboard(rows){
     </div>
   `;
 
+  // ===== MÊS ATIVO — mês final do filtro, 2025 completo vs 2026 parcial =====
+  // Identifica o mês/ano final do filtro global
+  let mesAtivo=null, anoMesAtivo=null;
+  if(ccLast26){
+    mesAtivo   = ccLast26.getMonth();   // 0-based
+    anoMesAtivo= ccLast26.getFullYear();
+  }
+
+  let modMesHtml='';
+  if(mesAtivo!==null && anoMesAtivo===2026){
+    // 2026: do dia 1 do mês final até ccLast26
+    const maFrom26 = new Date(2026, mesAtivo, 1, 0, 0, 0);
+    const maTo26   = new Date(2026, mesAtivo, ccLast26.getDate(), 23, 59, 59);
+    // 2025: mês completo equivalente
+    const maFrom25 = new Date(2025, mesAtivo, 1, 0, 0, 0);
+    const lastDay25= new Date(2025, mesAtivo+1, 0).getDate(); // último dia do mês
+    const maTo25   = new Date(2025, mesAtivo, lastDay25, 23, 59, 59);
+
+    const sfMA = activeStore==='all'?[0,1,2]:[+activeStore];
+    const maRows25=[], maRows26=[];
+    sfMA.forEach(si=>{
+      (rawData[si+'_2025']||[]).forEach(r=>{
+        const dt=parseDate(r.DATA_VENDA);
+        if(dt&&dt>=maFrom25&&dt<=maTo25) maRows25.push(r);
+      });
+      (rawData[si+'_2026']||[]).forEach(r=>{
+        const dt=parseDate(r.DATA_VENDA);
+        if(dt&&dt>=maFrom26&&dt<=maTo26) maRows26.push(r);
+      });
+    });
+
+    const maSG25 = aggSG(maRows25);
+    const maSG26 = aggSG(maRows26);
+    const maFatTot = [...maRows25,...maRows26].reduce((a,r)=>a+parseBR(r.VALOR_LIQUIDO_VENDA),0)||1;
+
+    // Union de subgrupos, ordenado por fat 2026
+    const maSGKeys = [...new Set([...Object.keys(maSG26),...Object.keys(maSG25)])]
+      .sort((a,b)=>(maSG26[b]?.val||0)-(maSG26[a]?.val||0));
+
+    const maTotQ25=Object.values(maSG25).reduce((a,b)=>a+b.qtde,0);
+    const maTotV25=Object.values(maSG25).reduce((a,b)=>a+b.val,0);
+    const maTotQ26=Object.values(maSG26).reduce((a,b)=>a+b.qtde,0);
+    const maTotV26=Object.values(maSG26).reduce((a,b)=>a+b.val,0);
+    const maTotYoyV=maTotV25>0?((maTotV26-maTotV25)/maTotV25*100):null;
+    const maTotYoyQ=maTotQ25>0?((maTotQ26-maTotQ25)/maTotQ25*100):null;
+
+    const maNomeMes=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][mesAtivo];
+    const maLbl25  = maNomeMes+' 2025 (completo)';
+    const maLbl26  = `01/${String(mesAtivo+1).padStart(2,'0')} – ${String(ccLast26.getDate()).padStart(2,'0')}/${String(mesAtivo+1).padStart(2,'0')}/2026`;
+
+    const maRows = maSGKeys.map((sg,idx)=>{
+      const v25=maSG25[sg]||{val:0,qtde:0};
+      const v26=maSG26[sg]||{val:0,qtde:0};
+      const yV=v25.val>0?((v26.val-v25.val)/v25.val*100):null;
+      const yQ=v25.qtde>0?((v26.qtde-v25.qtde)/v25.qtde*100):null;
+      const cV=yV===null?'#bbb':yV>=0?'var(--verde)':'var(--coral)';
+      const cQ=yQ===null?'#bbb':yQ>=0?'var(--verde)':'var(--coral)';
+      const aV=yV===null?'—':(yV>=0?'▲':'▼')+' '+Math.abs(yV).toFixed(1)+'%';
+      const aQ=yQ===null?'—':(yQ>=0?'▲':'▼')+' '+Math.abs(yQ).toFixed(1)+'%';
+      const q26c=`<span style="font-weight:800;color:#111;">${fmtN(v26.qtde)}</span>${yQ!==null?` <span style="font-size:11px;font-weight:700;color:${cQ};">${yQ>=0?'▲':'▼'}</span>`:''}`;
+      const v26c=`<span style="font-weight:800;color:#111;">${fmtBRL(v26.val)}</span>${yV!==null?` <span style="font-size:11px;font-weight:700;color:${cV};">${yV>=0?'▲':'▼'}</span>`:''}`;
+      return `<tr style="background:${idx%2===0?'#fff':'#fafafa'};">
+        <td style="padding:10px 14px;font-weight:700;color:#111;font-size:13px;">${sg}</td>
+        <td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#111;">${fmtN(v25.qtde)}</td>
+        <td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#111;">${fmtBRL(v25.val)}</td>
+        <td style="padding:10px 14px;text-align:right;font-size:13px;">${q26c}</td>
+        <td style="padding:10px 14px;text-align:right;font-size:13px;">${v26c}</td>
+        <td style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:${cQ};">${aQ}</td>
+        <td style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:${cV};">${aV}</td>
+      </tr>`;
+    }).join('');
+
+    const maTotYoyVtxt=maTotYoyV===null?'—':(maTotYoyV>=0?'▲':'▼')+' '+Math.abs(maTotYoyV).toFixed(1)+'%';
+    const maTotYoyQtxt=maTotYoyQ===null?'—':(maTotYoyQ>=0?'▲':'▼')+' '+Math.abs(maTotYoyQ).toFixed(1)+'%';
+    const maTotYoyVc=maTotYoyV===null?'#bbb':maTotYoyV>=0?'var(--verde)':'var(--coral)';
+    const maTotYoyQc=maTotYoyQ===null?'#bbb':maTotYoyQ>=0?'var(--verde)':'var(--coral)';
+    const maQ26tot=`<span style="font-weight:800;color:#111;">${fmtN(maTotQ26)}</span>${maTotYoyQ!==null?` <span style="font-size:11px;font-weight:700;color:${maTotYoyQc};">${maTotYoyQ>=0?'▲':'▼'}</span>`:''}`;
+    const maV26tot=`<span style="font-weight:800;color:#111;">${fmtBRL(maTotV26)}</span>${maTotYoyV!==null?` <span style="font-size:11px;font-weight:700;color:${maTotYoyVc};">${maTotYoyV>=0?'▲':'▼'}</span>`:''}`;
+
+    const maTotRow=`<tr style="background:#f0faf5;border-top:2px solid #ccc;">
+      <td style="padding:11px 14px;font-size:13px;font-weight:800;color:#111;">TOTAL</td>
+      <td style="padding:11px 14px;text-align:right;font-size:12px;font-weight:800;color:#111;">${fmtN(maTotQ25)}</td>
+      <td style="padding:11px 14px;text-align:right;font-size:12px;font-weight:800;color:#111;">${fmtBRL(maTotV25)}</td>
+      <td style="padding:11px 14px;text-align:right;font-size:13px;">${maQ26tot}</td>
+      <td style="padding:11px 14px;text-align:right;font-size:13px;">${maV26tot}</td>
+      <td style="padding:11px 14px;text-align:center;font-size:12px;font-weight:800;color:${maTotYoyQc};">${maTotYoyQtxt}</td>
+      <td style="padding:11px 14px;text-align:center;font-size:12px;font-weight:800;color:${maTotYoyVc};">${maTotYoyVtxt}</td>
+    </tr>`;
+
+    modMesHtml=`
+      <div class="section-title">📅 Desempenho no Mês — ${maNomeMes}</div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,rgba(0,153,187,0.04),transparent);">
+          <span style="font-size:14px;font-weight:800;color:#111;">Subgrupos · ${maNomeMes} parcial vs completo</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:11px;color:#888;background:#f5f5f7;padding:3px 10px;border-radius:8px;font-weight:600;">2025: ${maLbl25}</span>
+            <span style="font-size:11px;color:#fff;background:var(--cyan);padding:3px 10px;border-radius:8px;font-weight:600;">2026: ${maLbl26}</span>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;">
+            <thead>
+              <tr style="background:#f8f8fc;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#555;font-weight:800;">
+                <th style="padding:10px 14px;text-align:left;min-width:180px;">Subgrupo</th>
+                <th colspan="2" style="padding:10px 14px;text-align:center;border-left:2px solid #e8e8e8;color:var(--muted);">2025 — Mês Completo</th>
+                <th colspan="2" style="padding:10px 14px;text-align:center;border-left:2px solid #e8e8e8;color:var(--cyan);">2026 — Parcial</th>
+                <th colspan="2" style="padding:10px 14px;text-align:center;border-left:2px solid #e8e8e8;color:#555;">Crescimento</th>
+              </tr>
+              <tr style="background:#f0f4f8;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#888;">
+                <th style="padding:7px 14px;text-align:left;"></th>
+                <th style="padding:7px 14px;text-align:right;border-left:2px solid #e8e8e8;color:var(--muted);">Qtd. 2025</th>
+                <th style="padding:7px 14px;text-align:right;color:var(--muted);">Fat. 2025</th>
+                <th style="padding:7px 14px;text-align:right;border-left:2px solid #e8e8e8;color:var(--cyan);">Qtd. 2026</th>
+                <th style="padding:7px 14px;text-align:right;color:var(--cyan);">Fat. 2026</th>
+                <th style="padding:7px 14px;text-align:center;border-left:2px solid #e8e8e8;color:var(--cyan);">▲▼ Qtd.</th>
+                <th style="padding:7px 14px;text-align:center;color:var(--rosa);">▲▼ Fat.</th>
+              </tr>
+            </thead>
+            <tbody>${maRows}${maTotRow}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
   // YoY — compara até a última data disponível de 2026
   const yr=document.getElementById('yearSel').value;
   const mnthYoy=document.getElementById('monthSel').value;
@@ -1294,6 +1419,8 @@ function renderDashboard(rows){
 
     <!-- ===== CARROS-CHEFE ===== -->
     ${carroChefe}
+    <!-- ===== MÊS ATIVO ===== -->
+    ${modMesHtml}
   `;
 
   // Chart helpers
