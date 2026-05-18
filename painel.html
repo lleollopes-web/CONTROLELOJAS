@@ -727,6 +727,163 @@ async function uploadToGitHub(inputs){
   }
 }
 
+/* ===== CARROS-CHEFE — módulo independente ===== */
+function aggBySGProd(rws){
+  const m={};
+  rws.forEach(r=>{
+    const sg=(r.SUBGRUPO_PRODUTO||'').trim().replace(/\s+/g,' ');
+    const cod=(r.PRODUTO||'').trim();
+    const desc=(r.DESC_PRODUTO||'').trim();
+    const cor=(r.COR_PRODUTO||'').trim();
+    if(!sg||sg==='NO SAP'||!cod) return;
+    const val=parseBR(r.VALOR_LIQUIDO_VENDA);
+    const qtd=+r.QTDE_LIQUIDA||0;
+    if(val===0&&qtd===0) return;
+    if(!m[sg]) m[sg]={total:0,prods:{}};
+    m[sg].total+=val;
+    const key=`${cod}||${cor}`;
+    if(!m[sg].prods[key]) m[sg].prods[key]={cod,desc,cor,val:0,qtde:0};
+    m[sg].prods[key].val+=val;
+    m[sg].prods[key].qtde+=qtd;
+  });
+  return m;
+}
+
+function renderCarroChefe(){
+  const el=document.getElementById('ccModule');
+  if(!el) return;
+  if(!Object.keys(rawData).length){
+    el.innerHTML='<div style="color:#aaa;font-size:13px;padding:20px;">Carregue os dados para ver os Carros-Chefe.</div>';
+    return;
+  }
+
+  const ccLoja  = el.dataset.loja  || 'all';
+  const ccAno   = el.dataset.ano   || 'all';
+
+  // Monta linhas filtradas para "todos" e por ano
+  const sfCC = ccLoja==='all'?[0,1,2]:[+ccLoja];
+  const rAll=[], r25=[], r26=[];
+  sfCC.forEach(si=>{
+    const d25=rawData[si+'_2025']||[];
+    const d26=rawData[si+'_2026']||[];
+    d25.forEach(r=>{ r25.push(r); if(ccAno==='all'||ccAno==='2025') rAll.push(r); });
+    d26.forEach(r=>{ r26.push(r); if(ccAno==='all'||ccAno==='2026') rAll.push(r); });
+  });
+
+  const hasB = r25.length>0 && r26.length>0;
+  const showYoY = hasB && ccAno==='all';
+
+  const ccAll = aggBySGProd(rAll);
+  const cc25  = aggBySGProd(r25);
+  const cc26  = aggBySGProd(r26);
+  const fatTot= rAll.reduce((a,r)=>a+parseBR(r.VALOR_LIQUIDO_VENDA),0)||1;
+
+  const ccSubgrupos = Object.entries(ccAll).sort((a,b)=>b[1].total-a[1].total).slice(0,8);
+
+  const ccRows = ccSubgrupos.map(([sg,sgData])=>{
+    const topProds = Object.entries(sgData.prods).sort((a,b)=>b[1].val-a[1].val).slice(0,5);
+    const sgPct    = ((sgData.total/fatTot)*100).toFixed(1);
+    const sg25tot  = cc25[sg]?.total||0;
+    const sg26tot  = cc26[sg]?.total||0;
+    const sgYoy    = sg25tot>0 ? ((sg26tot-sg25tot)/sg25tot*100) : null;
+
+    const sgYoyHtml = showYoY && sgYoy!==null
+      ? `<span style="font-size:12px;font-weight:700;color:${sgYoy>=0?'var(--verde)':'var(--coral)'};">${sgYoy>=0?'▲':'▼'} ${Math.abs(sgYoy).toFixed(1)}%</span>`
+      : '';
+
+    const prodRows = topProds.map(([key,p],idx)=>{
+      const pPct = ((p.val/fatTot)*100).toFixed(2);
+      const p25  = cc25[sg]?.prods[key];
+      const p26  = cc26[sg]?.prods[key];
+      const yoy  = (showYoY && p25 && p25.val>0 && p26) ? ((p26.val-p25.val)/p25.val*100) : null;
+
+      const yoyCell  = showYoY ? `<td style="text-align:center;font-size:12px;font-weight:700;color:${yoy===null?'#bbb':yoy>=0?'var(--verde)':'var(--coral)'};">${yoy===null?'—':(yoy>=0?'▲':'▼')+' '+Math.abs(yoy).toFixed(1)+'%'}</td>` : '';
+      const fat25cell= showYoY ? `<td style="font-size:11px;color:#aaa;text-align:right;">${p25?fmtBRL(p25.val):'—'}</td>` : '';
+      const fat26cell= showYoY ? `<td style="font-size:11px;color:#333;text-align:right;font-weight:600;">${p26?fmtBRL(p26.val):'—'}</td>` : '';
+
+      return `<tr style="background:${idx%2===0?'#fff':'#fafafa'};">
+        <td style="text-align:center;font-weight:700;color:#ccc;font-size:12px;padding:9px 8px;">${idx+1}</td>
+        <td style="font-family:monospace;font-size:11px;color:#777;padding:9px 8px;white-space:nowrap;">${p.cod||'—'}</td>
+        <td style="font-size:12px;font-weight:500;color:#111;padding:9px 8px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${p.desc}">${p.desc||'—'}</td>
+        <td style="font-size:11px;color:#888;padding:9px 8px;">${p.cor||'—'}</td>
+        <td style="text-align:right;font-weight:700;color:var(--verde);font-size:12px;padding:9px 8px;">${fmtBRL(p.val)}</td>
+        <td style="text-align:center;font-size:12px;color:#555;padding:9px 8px;">${fmtN(p.qtde)}</td>
+        <td style="text-align:center;padding:9px 8px;"><span style="font-size:10px;font-weight:700;background:rgba(0,145,90,0.08);color:var(--verde);padding:2px 6px;border-radius:6px;">${pPct}%</span></td>
+        ${fat25cell}${fat26cell}${yoyCell}
+      </tr>`;
+    }).join('');
+
+    const yoyHeader = showYoY ? `<th style="text-align:right;padding:8px 8px;">2025</th><th style="text-align:right;padding:8px 8px;">2026</th><th style="text-align:center;padding:8px 8px;">YoY</th>` : '';
+
+    return `<div style="background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,rgba(0,145,90,0.04),transparent);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:13px;font-weight:800;color:var(--verde);text-transform:uppercase;letter-spacing:.5px;">⭐ ${sg}</span>
+          <span style="font-size:11px;color:#888;background:#f5f5f7;padding:2px 8px;border-radius:8px;font-weight:600;">${fmtBRL(sgData.total)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          ${sgYoyHtml}
+          <span style="font-size:12px;font-weight:700;color:#fff;background:var(--verde);padding:3px 10px;border-radius:20px;">${sgPct}% do fat.</span>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;">
+          <thead><tr style="background:#f8f8fc;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#888;">
+            <th style="padding:8px 8px;text-align:center;">#</th>
+            <th style="padding:8px 8px;text-align:left;">Cód.</th>
+            <th style="padding:8px 8px;text-align:left;">Descrição</th>
+            <th style="padding:8px 8px;text-align:left;">Cor</th>
+            <th style="padding:8px 8px;text-align:right;">Faturamento</th>
+            <th style="padding:8px 8px;text-align:center;">Peças</th>
+            <th style="padding:8px 8px;text-align:center;">% Fat.</th>
+            ${yoyHeader}
+          </tr></thead>
+          <tbody>${prodRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Selects de loja e ano disponíveis nos dados
+  const hasData25 = Object.keys(rawData).some(k=>k.endsWith('_2025'));
+  const hasData26 = Object.keys(rawData).some(k=>k.endsWith('_2026'));
+
+  const storeOpts = [
+    {v:'all',l:'Todas as Lojas'},
+    {v:'0',  l:'Intimissimi Iguatemi'},
+    {v:'1',  l:'Intimissimi RioMar'},
+    {v:'2',  l:'Calzedonia'},
+  ].map(o=>`<option value="${o.v}" ${ccLoja===o.v?'selected':''}>${o.l}</option>`).join('');
+
+  const anoOpts = [
+    {v:'all',l:'2025 + 2026'},
+    ...(hasData25?[{v:'2025',l:'2025'}]:[]),
+    ...(hasData26?[{v:'2026',l:'2026'}]:[]),
+  ].map(o=>`<option value="${o.v}" ${ccAno===o.v?'selected':''}>${o.l}</option>`).join('');
+
+  const hint = showYoY
+    ? '<span style="color:var(--verde);font-weight:600;">✅ Comparativo 2025 vs 2026 ativo</span>'
+    : `<span style="color:#aaa;">${!hasB?'Carregue ambos os anos para ver YoY':'Selecione "2025 + 2026" para comparativo'}</span>`;
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+      <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;">Loja</label>
+      <select onchange="document.getElementById('ccModule').dataset.loja=this.value;renderCarroChefe();"
+        style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;background:#fff;color:#333;cursor:pointer;">
+        ${storeOpts}
+      </select>
+      <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;">Ano</label>
+      <select onchange="document.getElementById('ccModule').dataset.ano=this.value;renderCarroChefe();"
+        style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;background:#fff;color:#333;cursor:pointer;">
+        ${anoOpts}
+      </select>
+      <span style="font-size:11px;margin-left:4px;">${hint}</span>
+    </div>
+    ${ccRows || '<div style="color:#aaa;padding:20px;font-size:13px;">Nenhum dado encontrado para este filtro.</div>'}
+  `;
+}
+
+
 function showToast(msg, tipo){
   // Remove existing toast
   const existing=document.getElementById('toast');
@@ -967,138 +1124,7 @@ function renderDashboard(rows){
     .filter(([v,d])=>d.val!==0||d.qtde!==0)
     .sort((a,b)=>b[1].val-a[1].val).slice(0,15);
 
-  // ===== CARROS-CHEFE: top produtos por subgrupo com YoY =====
-  // Agrega 2025 e 2026 separados para comparativo
-  const sf2=activeStore==='all'?[0,1,2]:[+activeStore];
-  const rCC25=[], rCC26=[];
-  sf2.forEach(si=>{
-    (rawData[si+'_2025']||[]).forEach(r=>rCC25.push({...r,_storeIdx:si}));
-    (rawData[si+'_2026']||[]).forEach(r=>rCC26.push({...r,_storeIdx:si}));
-  });
-  const hasCC25=rCC25.length>0, hasCC26=rCC26.length>0;
-
-  // Helper: agrega faturamento por produto dentro de cada subgrupo
-  function aggBySGProd(rws){
-    const m={};
-    rws.forEach(r=>{
-      const sg=(r.SUBGRUPO_PRODUTO||'').trim().replace(/\s+/g,' ');
-      const cod=(r.PRODUTO||'').trim();
-      const desc=(r.DESC_PRODUTO||'').trim();
-      const cor=(r.COR_PRODUTO||'').trim();
-      if(!sg||sg==='NO SAP'||!cod) return;
-      const val=parseBR(r.VALOR_LIQUIDO_VENDA);
-      const qtd=+r.QTDE_LIQUIDA||0;
-      if(val===0&&qtd===0) return;
-      if(!m[sg]) m[sg]={total:0, prods:{}};
-      m[sg].total+=val;
-      const key=`${cod}||${cor}`;
-      if(!m[sg].prods[key]) m[sg].prods[key]={cod,desc,cor,val:0,qtde:0};
-      m[sg].prods[key].val+=val;
-      m[sg].prods[key].qtde+=qtd;
-    });
-    return m;
-  }
-
-  const ccAll  = aggBySGProd(rows);
-  const cc25   = aggBySGProd(rCC25);
-  const cc26   = aggBySGProd(rCC26);
-  const fatTot = rows.reduce((a,r)=>a+parseBR(r.VALOR_LIQUIDO_VENDA),0)||1;
-
-  // Monta lista de subgrupos ordenada por faturamento total (top 8)
-  const ccSubgrupos = Object.entries(ccAll)
-    .sort((a,b)=>b[1].total-a[1].total)
-    .slice(0,8);
-
-  // Gera HTML do módulo
-  const showYoY = hasCC25 && hasCC26 && document.getElementById('yearSel').value==='all';
-
-  const ccRows = ccSubgrupos.map(([sg, sgData])=>{
-    // Top 5 produtos do subgrupo por faturamento
-    const topProds = Object.entries(sgData.prods)
-      .sort((a,b)=>b[1].val-a[1].val)
-      .slice(0,5);
-
-    const sgPct = ((sgData.total/fatTot)*100).toFixed(1);
-    const sg25tot = cc25[sg]?.total||0;
-    const sg26tot = cc26[sg]?.total||0;
-    const sgYoy = sg25tot>0 ? ((sg26tot-sg25tot)/sg25tot*100) : null;
-    const sgYoyHtml = showYoY && sgYoy!==null
-      ? `<span style="font-size:11px;font-weight:700;color:${sgYoy>=0?'var(--verde)':'var(--coral)'};">
-           ${sgYoy>=0?'▲':'▼'} ${Math.abs(sgYoy).toFixed(1)}%
-         </span>`
-      : '';
-
-    const prodRows = topProds.map(([key, p], idx)=>{
-      const pPct = ((p.val/fatTot)*100).toFixed(2);
-      const p25 = cc25[sg]?.prods[key];
-      const p26 = cc26[sg]?.prods[key];
-      const yoy = (showYoY && p25 && p25.val>0 && p26)
-        ? ((p26.val - p25.val)/p25.val*100) : null;
-      const yoyCell = showYoY
-        ? `<td style="text-align:center;font-size:12px;font-weight:700;color:${yoy===null?'#bbb':yoy>=0?'var(--verde)':'var(--coral)'};">
-             ${yoy===null ? '—' : (yoy>=0?'▲':'▼')+' '+Math.abs(yoy).toFixed(1)+'%'}
-           </td>`
-        : '';
-      const fat25cell = showYoY
-        ? `<td style="font-size:11px;color:#888;text-align:right;">${p25?fmtBRL(p25.val):'—'}</td>`
-        : '';
-      const fat26cell = showYoY
-        ? `<td style="font-size:11px;color:#555;text-align:right;font-weight:600;">${p26?fmtBRL(p26.val):'—'}</td>`
-        : '';
-      return `<tr style="background:${idx%2===0?'#fff':'#fafafa'};">
-        <td style="text-align:center;font-weight:700;color:#bbb;font-size:12px;">${idx+1}</td>
-        <td style="font-family:monospace;font-size:11px;color:#777;white-space:nowrap;">${p.cod||'—'}</td>
-        <td style="font-size:12px;font-weight:500;color:#111;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${p.desc}">${p.desc||'—'}</td>
-        <td style="font-size:11px;color:#888;">${p.cor||'—'}</td>
-        <td style="text-align:right;font-weight:700;color:var(--rosa);font-size:12px;">${fmtBRL(p.val)}</td>
-        <td style="text-align:center;font-size:12px;color:#555;">${fmtN(p.qtde)}</td>
-        <td style="text-align:center;"><span style="font-size:10px;font-weight:700;background:rgba(200,0,110,0.08);color:var(--rosa);padding:2px 6px;border-radius:6px;">${pPct}%</span></td>
-        ${fat25cell}${fat26cell}${yoyCell}
-      </tr>`;
-    }).join('');
-
-    const yoyHeader = showYoY
-      ? `<th style="text-align:right;">2025</th><th style="text-align:right;">2026</th><th style="text-align:center;">YoY</th>`
-      : '';
-
-    return `<div style="background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,rgba(200,0,110,0.04),transparent);">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:13px;font-weight:800;color:var(--rosa);text-transform:uppercase;letter-spacing:.5px;">⭐ ${sg}</span>
-          <span style="font-size:11px;color:#888;background:#f5f5f7;padding:2px 8px;border-radius:8px;font-weight:600;">${fmtBRL(sgData.total)}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          ${sgYoyHtml}
-          <span style="font-size:12px;font-weight:700;color:#fff;background:var(--rosa);padding:3px 10px;border-radius:20px;">${sgPct}% do fat.</span>
-        </div>
-      </div>
-      <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;">
-          <thead>
-            <tr style="background:#f8f8fc;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#888;">
-              <th style="padding:8px 10px;text-align:center;">#</th>
-              <th style="padding:8px 10px;text-align:left;">Cód.</th>
-              <th style="padding:8px 10px;text-align:left;">Descrição</th>
-              <th style="padding:8px 10px;text-align:left;">Cor</th>
-              <th style="padding:8px 10px;text-align:right;">Faturamento</th>
-              <th style="padding:8px 10px;text-align:center;">Peças</th>
-              <th style="padding:8px 10px;text-align:center;">% Fat.</th>
-              ${yoyHeader}
-            </tr>
-          </thead>
-          <tbody>${prodRows}</tbody>
-        </table>
-      </div>
-    </div>`;
-  }).join('');
-
-  const carroChefe = `
-    <div class="section-title">🏆 Carros-Chefe por Subgrupo</div>
-    <div style="margin-bottom:8px;padding:10px 14px;background:rgba(200,0,110,0.04);border:1px solid rgba(200,0,110,0.12);border-radius:10px;font-size:12px;color:#888;">
-      Top 5 produtos por faturamento em cada subgrupo · ${showYoY?'Com comparativo 2025 vs 2026':'Selecione "Todos os Anos" para ver comparativo YoY'}
-    </div>
-    ${ccRows}
-  `;
+  const carroChefe = `<div id="ccModule"></div>`;
 
   // YoY — compara até a última data disponível de 2026
   const yr=document.getElementById('yearSel').value;
@@ -1385,6 +1411,9 @@ const dOptsSG=(labels,data)=>{
     const sv=Object.values(byStore).filter(s=>s.val>0);
     charts.store=new Chart(cSt,{type:'bar',data:{labels:sv.map(s=>s.name),datasets:[{data:sv.map(s=>s.val),backgroundColor:PALETTE,borderRadius:8,borderSkipped:false}]},options:cOpts(fmtBRL)});
   }
+
+  // Render independent Carros-Chefe module
+  setTimeout(renderCarroChefe, 50);
 }
 
 /* COMPARISON */
