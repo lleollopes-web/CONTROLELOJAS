@@ -1053,12 +1053,15 @@ function renderDashboard(rows){
     const cQ=yoyQ===null?'#bbb':yoyQ>=0?'var(--verde)':'var(--coral)';
     const aV=yoyV===null?'—':(yoyV>=0?'▲':'▼')+' '+Math.abs(yoyV).toFixed(1)+'%';
     const aQ=yoyQ===null?'—':(yoyQ>=0?'▲':'▼')+' '+Math.abs(yoyQ).toFixed(1)+'%';
+    // Setas inline nas células 2026
+    const q26cell=`<span style="font-weight:800;color:#111;">${fmtN(v26.qtde)}</span>${yoyQ!==null?` <span style="font-size:10px;font-weight:700;color:${cQ};">${yoyQ>=0?'▲':'▼'}${Math.abs(yoyQ).toFixed(1)}%</span>`:''}`;
+    const v26cell=`<span style="font-weight:800;color:#111;">${fmtBRL(v26.val)}</span>${yoyV!==null?` <span style="font-size:10px;font-weight:700;color:${cV};">${yoyV>=0?'▲':'▼'}${Math.abs(yoyV).toFixed(1)}%</span>`:''}`;
     return `<tr style="background:${idx%2===0?'#fff':'#fafafa'};">
-      <td style="padding:10px 14px;font-weight:600;color:#111;font-size:13px;">${sg}</td>
-      <td style="padding:10px 14px;text-align:right;font-size:12px;color:#888;">${fmtN(v25.qtde)}</td>
-      <td style="padding:10px 14px;text-align:right;font-size:12px;color:#888;">${fmtBRL(v25.val)}</td>
-      <td style="padding:10px 14px;text-align:right;font-size:13px;font-weight:700;color:#333;">${fmtN(v26.qtde)}</td>
-      <td style="padding:10px 14px;text-align:right;font-size:13px;font-weight:700;color:var(--verde);">${fmtBRL(v26.val)}</td>
+      <td style="padding:10px 14px;font-weight:700;color:#111;font-size:13px;">${sg}</td>
+      <td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#111;">${fmtN(v25.qtde)}</td>
+      <td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#111;">${fmtBRL(v25.val)}</td>
+      <td style="padding:10px 14px;text-align:right;font-size:13px;">${q26cell}</td>
+      <td style="padding:10px 14px;text-align:right;font-size:13px;">${v26cell}</td>
       <td style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:${cQ};">${aQ}</td>
       <td style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:${cV};">${aV}</td>
     </tr>`;
@@ -1069,12 +1072,14 @@ function renderDashboard(rows){
   const totYoyVc=totYoyV===null?'#bbb':totYoyV>=0?'var(--verde)':'var(--coral)';
   const totYoyQc=totYoyQ===null?'#bbb':totYoyQ>=0?'var(--verde)':'var(--coral)';
 
-  const ccTotRow=`<tr style="background:#f0faf5;border-top:2px solid #ddd;font-weight:800;">
-    <td style="padding:11px 14px;font-size:13px;color:#111;">TOTAL</td>
-    <td style="padding:11px 14px;text-align:right;font-size:12px;color:#555;">${fmtN(totQ25)}</td>
-    <td style="padding:11px 14px;text-align:right;font-size:12px;color:#555;">${fmtBRL(totV25)}</td>
-    <td style="padding:11px 14px;text-align:right;font-size:13px;color:#333;">${fmtN(totQ26)}</td>
-    <td style="padding:11px 14px;text-align:right;font-size:13px;color:var(--verde);">${fmtBRL(totV26)}</td>
+  const totQ26cell=`<span style="font-weight:800;color:#111;">${fmtN(totQ26)}</span>${totYoyQ!==null?` <span style="font-size:10px;font-weight:700;color:${totYoyQc};">${totYoyQ>=0?'▲':'▼'}${Math.abs(totYoyQ).toFixed(1)}%</span>`:''}`;
+  const totV26cell=`<span style="font-weight:800;color:#111;">${fmtBRL(totV26)}</span>${totYoyV!==null?` <span style="font-size:10px;font-weight:700;color:${totYoyVc};">${totYoyV>=0?'▲':'▼'}${Math.abs(totYoyV).toFixed(1)}%</span>`:''}`;
+  const ccTotRow=`<tr style="background:#f0faf5;border-top:2px solid #ccc;">
+    <td style="padding:11px 14px;font-size:13px;font-weight:800;color:#111;">TOTAL</td>
+    <td style="padding:11px 14px;text-align:right;font-size:12px;font-weight:800;color:#111;">${fmtN(totQ25)}</td>
+    <td style="padding:11px 14px;text-align:right;font-size:12px;font-weight:800;color:#111;">${fmtBRL(totV25)}</td>
+    <td style="padding:11px 14px;text-align:right;font-size:13px;">${totQ26cell}</td>
+    <td style="padding:11px 14px;text-align:right;font-size:13px;">${totV26cell}</td>
     <td style="padding:11px 14px;text-align:center;font-size:12px;font-weight:800;color:${totYoyQc};">${totYoyQtxt}</td>
     <td style="padding:11px 14px;text-align:center;font-size:12px;font-weight:800;color:${totYoyVc};">${totYoyVtxt}</td>
   </tr>`;
