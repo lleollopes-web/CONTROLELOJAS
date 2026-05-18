@@ -260,12 +260,27 @@ tr:hover td{background:rgba(0,0,0,0.015)}
 </div>
 
 <div class="modal-overlay" id="modalOverlay">
-  <div class="modal" style="max-width:440px;padding:20px 24px;">
+  <div class="modal" style="max-width:480px;padding:20px 24px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <h2 style="font-size:18px;">📂 Importar CSVs</h2>
-      <span style="font-size:11px;font-weight:600;color:#00915A;background:rgba(0,145,90,0.08);border:1px solid rgba(0,145,90,0.2);border-radius:20px;padding:3px 10px;">✅ GitHub conectado</span>
+      <span id="ghStatusBadge" style="font-size:11px;font-weight:600;border-radius:20px;padding:3px 10px;">⏳ Verificando...</span>
     </div>
-    <input type="hidden" id="ghToken" value="">
+
+    <!-- Token field -->
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;font-weight:700;color:#888;letter-spacing:.5px;display:block;margin-bottom:5px;">🔑 TOKEN GITHUB</label>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input type="password" id="ghTokenInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+          style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:monospace;background:#f8f8fc;outline:none;"
+          oninput="onTokenInput(this.value)">
+        <button id="btnSaveToken" onclick="saveToken()"
+          style="padding:8px 14px;background:var(--rosa);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
+          💾 Salvar
+        </button>
+      </div>
+      <div id="tokenHint" style="font-size:11px;color:#aaa;margin-top:4px;">Token salvo no navegador. Necessário para enviar arquivos ao GitHub.</div>
+    </div>
+
     <div class="file-list" id="fileList"></div>
     <div id="uploadProgress" style="display:none;margin-top:10px;"></div>
     <div class="modal-actions" style="margin-top:16px;">
@@ -528,6 +543,43 @@ function toggleTokenEdit(){
   }
 }
 
+function saveToken(){
+  const val = document.getElementById('ghTokenInput').value.trim();
+  if(!val){showToast('⚠️ Token vazio!','erro');return;}
+  GITHUB_TOKEN = val;
+  localStorage.setItem('gh_token', val);
+  updateTokenUI();
+  showToast('✅ Token salvo!','verde');
+}
+
+function onTokenInput(val){
+  const hint = document.getElementById('tokenHint');
+  if(val.startsWith('ghp_') || val.startsWith('github_pat_')){
+    hint.textContent = '✅ Formato válido. Clique em Salvar.';
+    hint.style.color = 'var(--verde)';
+  } else if(val.length > 5) {
+    hint.textContent = '⚠️ Token deve começar com ghp_ ou github_pat_';
+    hint.style.color = 'orange';
+  } else {
+    hint.textContent = 'Token salvo no navegador. Necessário para enviar arquivos ao GitHub.';
+    hint.style.color = '#aaa';
+  }
+}
+
+function updateTokenUI(){
+  const badge = document.getElementById('ghStatusBadge');
+  const tokenInput = document.getElementById('ghTokenInput');
+  if(!badge) return;
+  if(GITHUB_TOKEN){
+    badge.textContent = '✅ GitHub conectado';
+    badge.style.cssText = 'font-size:11px;font-weight:600;color:#00915A;background:rgba(0,145,90,0.08);border:1px solid rgba(0,145,90,0.2);border-radius:20px;padding:3px 10px;';
+    if(tokenInput) tokenInput.placeholder = '••••••••••••••• (configurado)';
+  } else {
+    badge.textContent = '❌ Token não configurado';
+    badge.style.cssText = 'font-size:11px;font-weight:600;color:#c00;background:rgba(200,0,0,0.08);border:1px solid rgba(200,0,0,0.2);border-radius:20px;padding:3px 10px;';
+  }
+}
+
 function openModal(){
   const fl=document.getElementById('fileList');
   const slots25=fileSlots.filter(s=>s.year===2025);
@@ -569,6 +621,7 @@ function openModal(){
   document.getElementById('uploadProgress').innerHTML='';
   document.getElementById('modalOverlay').classList.add('open');
   importMode='github';
+  updateTokenUI();
 }
 function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
 async function processFiles(){
