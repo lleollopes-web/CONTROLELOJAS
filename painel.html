@@ -1012,53 +1012,49 @@ function renderDashboard(rows){
     return m;
   }
 
-  // Separa rows filtradas em 2025 e 2026
-  const ccRows26 = rows.filter(r=>{ const dt=parseDate(r.DATA_VENDA); return dt&&dt.getFullYear()===2026; });
-  const ccRows25 = rows.filter(r=>{ const dt=parseDate(r.DATA_VENDA); return dt&&dt.getFullYear()===2025; });
-
-  // Encontra o intervalo de datas efetivo de 2026 nas rows filtradas
-  let ccFirst26=null, ccLast26=null;
-  ccRows26.forEach(r=>{
-    const dt=parseDate(r.DATA_VENDA);
-    if(!dt) return;
-    if(!ccFirst26||dt<ccFirst26) ccFirst26=dt;
-    if(!ccLast26||dt>ccLast26)  ccLast26=dt;
+  // Módulo Desempenho: sempre de 01/01 até a última data disponível de cada ano (ignorar filtro de data)
+  const sfCC=activeStore==='all'?[0,1,2]:[+activeStore];
+  const ccAllRows26=[], ccAllRows25=[];
+  sfCC.forEach(si=>{
+    (rawData[si+'_2026']||[]).forEach(r=>ccAllRows26.push(r));
+    (rawData[si+'_2025']||[]).forEach(r=>ccAllRows25.push(r));
   });
 
-  // Espelha o mesmo período (dia/mês) em 2025, buscando nos dados brutos da loja ativa
-  const sfCC=activeStore==='all'?[0,1,2]:[+activeStore];
-  let ccRows25mirror=[];
-  if(ccFirst26&&ccLast26){
-    const fromMirror=new Date(2025,ccFirst26.getMonth(),ccFirst26.getDate(),0,0,0);
-    const toMirror  =new Date(2025,ccLast26.getMonth(), ccLast26.getDate(), 23,59,59);
-    sfCC.forEach(si=>{
-      (rawData[si+'_2025']||[]).forEach(r=>{
+  // Última data disponível em 2026
+  let ccLast26=null;
+  ccAllRows26.forEach(r=>{const dt=parseDate(r.DATA_VENDA);if(dt&&(!ccLast26||dt>ccLast26))ccLast26=dt;});
+
+  // 2026: 01/01/2026 até ccLast26
+  const ccRows26 = ccLast26
+    ? ccAllRows26.filter(r=>{const dt=parseDate(r.DATA_VENDA);return dt&&dt<=ccLast26;})
+    : ccAllRows26;
+
+  // 2025: 01/01/2025 até mesmo dia/mês de ccLast26
+  const ccRows25mirror = ccLast26
+    ? ccAllRows25.filter(r=>{
         const dt=parseDate(r.DATA_VENDA);
-        if(dt&&dt>=fromMirror&&dt<=toMirror) ccRows25mirror.push(r);
-      });
-    });
-  } else {
-    ccRows25mirror = ccRows25; // fallback
-  }
+        if(!dt) return false;
+        const cutoff=new Date(2025,ccLast26.getMonth(),ccLast26.getDate(),23,59,59);
+        return dt<=cutoff;
+      })
+    : ccAllRows25;
 
   const hasCC = ccRows26.length>0 && ccRows25mirror.length>0;
 
-  // Agrega: sgAll = período atual (rows globais), sg25 = espelho 2025, sg26 = 2026 filtrado
-  const sgAll = aggSG(rows);
+  // sgAll usa os dados de 2026 completos (jan-última data) para ordenação
+  const sgAll = aggSG(ccRows26);
   const sg26  = aggSG(ccRows26);
   const sg25  = aggSG(ccRows25mirror);
-  const fatCC = rows.reduce((a,r)=>a+parseBR(r.VALOR_LIQUIDO_VENDA),0)||1;
+  const fatCC = ccRows26.reduce((a,r)=>a+parseBR(r.VALOR_LIQUIDO_VENDA),0)||1;
 
-  // Ordena por faturamento do período atual
+  // Ordena por faturamento 2026
   const sgSorted = Object.entries(sgAll).sort((a,b)=>b[1].val-a[1].val);
 
-  // Badge de período
+  // Badge de período — sempre 01/01 até última data
   const fmtD = d=>d?d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}):'—';
   const lastCC26Str = ccLast26?fmtD(ccLast26):'—';
-  const periodoCC26 = ccFirst26&&ccLast26?`${fmtD(ccFirst26)} – ${fmtD(ccLast26)}`:'2026';
-  const periodoCC25 = ccFirst26&&ccLast26
-    ?`${new Date(2025,ccFirst26.getMonth(),ccFirst26.getDate()).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})} – ${new Date(2025,ccLast26.getMonth(),ccLast26.getDate()).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}`
-    :'2025';
+  const periodoCC26 = ccLast26?`01 de jan. – ${fmtD(ccLast26)}`:'2026';
+  const periodoCC25 = ccLast26?`01 de jan. – ${new Date(2025,ccLast26.getMonth(),ccLast26.getDate()).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}`:'2025';
 
   // Totais para rodapé
   const totQ25=Object.values(sg25).reduce((a,b)=>a+b.qtde,0);
@@ -1373,7 +1369,6 @@ function renderDashboard(rows){
       <div class="kpi-card k1 d1"><div class="kpi-icon">💰</div><div class="kpi-label">Faturamento Líquido</div><div class="kpi-value" style="font-size:22px;">${fmtBRL(fat)}</div><div class="kpi-sub">Total do período</div></div>
       <div class="kpi-card k2 d2"><div class="kpi-icon">📦</div><div class="kpi-label">Peças Vendidas</div><div class="kpi-value">${fmtN(qtde)}</div><div class="kpi-sub">Qtde líquida</div></div>
       <div class="kpi-card k3 d3"><div class="kpi-icon">🧾</div><div class="kpi-label">Ticket Médio</div><div class="kpi-value" style="font-size:22px;">${fmtBRL(ticketM)}</div><div class="kpi-sub">${fmtN(tix)} transações</div></div>
-      <div class="kpi-card k4 d4"><div class="kpi-icon">🏷️</div><div class="kpi-label">Descontos</div><div class="kpi-value" style="font-size:22px;">${fmtBRL(desc)}</div><div class="kpi-sub">Total concedido</div></div>
       <div class="kpi-card k5 d5"><div class="kpi-icon">📊</div><div class="kpi-label">Peças / Transação</div><div class="kpi-value">${tix?(qtde/tix).toFixed(1):'—'}</div><div class="kpi-sub">Média por cupom</div></div>
       ${yoyHtml}
     </div>
@@ -1455,29 +1450,61 @@ function renderDashboard(rows){
         ${hasInti?'<th style="background:rgba(200,0,110,0.06);color:var(--rosa);">Calcinha</th><th style="background:rgba(200,0,110,0.06);color:var(--rosa);">Sutiã</th>':''}
         ${hasCalz?'<th style="background:rgba(212,144,10,0.08);color:var(--amber);">Calça</th><th style="background:rgba(212,144,10,0.08);color:var(--amber);">Maré</th>':''}
       </tr></thead>
-      <tbody>${topVend.map(([v,d],i)=>{
-        const pct = fat ? ((d.val/fat)*100).toFixed(1)+'%' : '—';
-        const pecasTicket = d.tix ? (d.qtde/d.tix).toFixed(1) : '—';
-        const intiCols = hasInti
-          ? `<td style="text-align:center;font-weight:700;background:rgba(200,0,110,0.03);">${d.calcinha>0?fmtN(d.calcinha):'—'}</td>
-             <td style="text-align:center;font-weight:700;background:rgba(200,0,110,0.03);">${d.sutia>0?fmtN(d.sutia):'—'}</td>`
+      <tbody>${(()=>{
+        // Totais
+        const totVal=topVend.reduce((a,[,d])=>a+d.val,0);
+        const totQtde=topVend.reduce((a,[,d])=>a+d.qtde,0);
+        const totTix=topVend.reduce((a,[,d])=>a+d.tix,0);
+        const totTicketM=totTix?totVal/totTix:0;
+        const totCalcinha=topVend.reduce((a,[,d])=>a+d.calcinha,0);
+        const totSutia=topVend.reduce((a,[,d])=>a+d.sutia,0);
+        const totCalca=topVend.reduce((a,[,d])=>a+d.calca,0);
+        const totMare=topVend.reduce((a,[,d])=>a+d.mare,0);
+        const totPecasTicket=totTix?(totQtde/totTix).toFixed(1):'—';
+        const rows=topVend.map(([v,d],i)=>{
+          const pct = fat ? ((d.val/fat)*100).toFixed(1)+'%' : '—';
+          const pecasTicket = d.tix ? (d.qtde/d.tix).toFixed(1) : '—';
+          const intiCols = hasInti
+            ? `<td style="text-align:center;font-weight:700;background:rgba(200,0,110,0.03);">${d.calcinha>0?fmtN(d.calcinha):'—'}</td>
+               <td style="text-align:center;font-weight:700;background:rgba(200,0,110,0.03);">${d.sutia>0?fmtN(d.sutia):'—'}</td>`
+            : '';
+          const calzCols = hasCalz
+            ? `<td style="text-align:center;font-weight:700;background:rgba(212,144,10,0.04);">${d.calca>0?fmtN(d.calca):'—'}</td>
+               <td style="text-align:center;font-weight:700;background:rgba(212,144,10,0.04);">${d.mare>0?fmtN(d.mare):'—'}</td>`
+            : '';
+          return `<tr>
+            <td class="rank">${i<3?`<span style="font-size:16px;">${i===0?'🥇':i===1?'🥈':'🥉'}</span>`:(i+1)}</td>
+            <td style="font-weight:700;color:#111;">${v}</td>
+            <td><strong style="color:#111;">${fmtBRL(d.val)}</strong></td>
+            <td>${fmtN(d.qtde)}</td>
+            <td style="color:#555;">${fmtN(d.tix)}</td>
+            <td style="color:#555;">${fmtBRL(d.ticketM)}</td>
+            <td style="color:#555;font-weight:600;">${pecasTicket}</td>
+            <td><span class="pill pill-verde">${pct}</span></td>
+            ${intiCols}${calzCols}
+          </tr>`;
+        }).join('');
+        const totIntiCols = hasInti
+          ? `<td style="text-align:center;font-weight:800;background:rgba(200,0,110,0.06);">${totCalcinha>0?fmtN(totCalcinha):'—'}</td>
+             <td style="text-align:center;font-weight:800;background:rgba(200,0,110,0.06);">${totSutia>0?fmtN(totSutia):'—'}</td>`
           : '';
-        const calzCols = hasCalz
-          ? `<td style="text-align:center;font-weight:700;background:rgba(212,144,10,0.04);">${d.calca>0?fmtN(d.calca):'—'}</td>
-             <td style="text-align:center;font-weight:700;background:rgba(212,144,10,0.04);">${d.mare>0?fmtN(d.mare):'—'}</td>`
+        const totCalzCols = hasCalz
+          ? `<td style="text-align:center;font-weight:800;background:rgba(212,144,10,0.07);">${totCalca>0?fmtN(totCalca):'—'}</td>
+             <td style="text-align:center;font-weight:800;background:rgba(212,144,10,0.07);">${totMare>0?fmtN(totMare):'—'}</td>`
           : '';
-        return `<tr>
-          <td class="rank">${i<3?`<span style="font-size:16px;">${i===0?'🥇':i===1?'🥈':'🥉'}</span>`:(i+1)}</td>
-          <td style="font-weight:700;color:#111;">${v}</td>
-          <td><strong style="color:#111;">${fmtBRL(d.val)}</strong></td>
-          <td>${fmtN(d.qtde)}</td>
-          <td style="color:#555;">${fmtN(d.tix)}</td>
-          <td style="color:#555;">${fmtBRL(d.ticketM)}</td>
-          <td style="color:#555;font-weight:600;">${pecasTicket}</td>
-          <td><span class="pill pill-verde">${pct}</span></td>
-          ${intiCols}${calzCols}
+        const totRow=`<tr style="background:#f0faf5;border-top:2px solid #ccc;font-weight:800;">
+          <td></td>
+          <td style="font-size:13px;color:#111;font-weight:800;">TOTAL</td>
+          <td><strong style="color:#111;">${fmtBRL(totVal)}</strong></td>
+          <td style="font-weight:800;">${fmtN(totQtde)}</td>
+          <td style="color:#555;font-weight:800;">${fmtN(totTix)}</td>
+          <td style="color:#555;font-weight:800;">${fmtBRL(totTicketM)}</td>
+          <td style="color:#555;font-weight:800;">${totPecasTicket}</td>
+          <td></td>
+          ${totIntiCols}${totCalzCols}
         </tr>`;
-      }).join('')}</tbody></table>
+        return rows+totRow;
+      })()}</tbody></table>
     </div>
 
     <!-- ===== CARROS-CHEFE ===== -->
