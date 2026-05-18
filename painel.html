@@ -1053,9 +1053,9 @@ function renderDashboard(rows){
     const cQ=yoyQ===null?'#bbb':yoyQ>=0?'var(--verde)':'var(--coral)';
     const aV=yoyV===null?'—':(yoyV>=0?'▲':'▼')+' '+Math.abs(yoyV).toFixed(1)+'%';
     const aQ=yoyQ===null?'—':(yoyQ>=0?'▲':'▼')+' '+Math.abs(yoyQ).toFixed(1)+'%';
-    // Setas inline nas células 2026
-    const q26cell=`<span style="font-weight:800;color:#111;">${fmtN(v26.qtde)}</span>${yoyQ!==null?` <span style="font-size:10px;font-weight:700;color:${cQ};">${yoyQ>=0?'▲':'▼'}${Math.abs(yoyQ).toFixed(1)}%</span>`:''}`;
-    const v26cell=`<span style="font-weight:800;color:#111;">${fmtBRL(v26.val)}</span>${yoyV!==null?` <span style="font-size:10px;font-weight:700;color:${cV};">${yoyV>=0?'▲':'▼'}${Math.abs(yoyV).toFixed(1)}%</span>`:''}`;
+    // Setas inline nas células 2026 (sem percentual — só seta)
+    const q26cell=`<span style="font-weight:800;color:#111;">${fmtN(v26.qtde)}</span>${yoyQ!==null?` <span style="font-size:11px;font-weight:700;color:${cQ};">${yoyQ>=0?'▲':'▼'}</span>`:''}`;
+    const v26cell=`<span style="font-weight:800;color:#111;">${fmtBRL(v26.val)}</span>${yoyV!==null?` <span style="font-size:11px;font-weight:700;color:${cV};">${yoyV>=0?'▲':'▼'}</span>`:''}`;
     return `<tr style="background:${idx%2===0?'#fff':'#fafafa'};">
       <td style="padding:10px 14px;font-weight:700;color:#111;font-size:13px;">${sg}</td>
       <td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#111;">${fmtN(v25.qtde)}</td>
@@ -1072,8 +1072,8 @@ function renderDashboard(rows){
   const totYoyVc=totYoyV===null?'#bbb':totYoyV>=0?'var(--verde)':'var(--coral)';
   const totYoyQc=totYoyQ===null?'#bbb':totYoyQ>=0?'var(--verde)':'var(--coral)';
 
-  const totQ26cell=`<span style="font-weight:800;color:#111;">${fmtN(totQ26)}</span>${totYoyQ!==null?` <span style="font-size:10px;font-weight:700;color:${totYoyQc};">${totYoyQ>=0?'▲':'▼'}${Math.abs(totYoyQ).toFixed(1)}%</span>`:''}`;
-  const totV26cell=`<span style="font-weight:800;color:#111;">${fmtBRL(totV26)}</span>${totYoyV!==null?` <span style="font-size:10px;font-weight:700;color:${totYoyVc};">${totYoyV>=0?'▲':'▼'}${Math.abs(totYoyV).toFixed(1)}%</span>`:''}`;
+  const totQ26cell=`<span style="font-weight:800;color:#111;">${fmtN(totQ26)}</span>${totYoyQ!==null?` <span style="font-size:11px;font-weight:700;color:${totYoyQc};">${totYoyQ>=0?'▲':'▼'}</span>`:''}`;
+  const totV26cell=`<span style="font-weight:800;color:#111;">${fmtBRL(totV26)}</span>${totYoyV!==null?` <span style="font-size:11px;font-weight:700;color:${totYoyVc};">${totYoyV>=0?'▲':'▼'}</span>`:''}`;
   const ccTotRow=`<tr style="background:#f0faf5;border-top:2px solid #ccc;">
     <td style="padding:11px 14px;font-size:13px;font-weight:800;color:#111;">TOTAL</td>
     <td style="padding:11px 14px;text-align:right;font-size:12px;font-weight:800;color:#111;">${fmtN(totQ25)}</td>
@@ -1240,7 +1240,7 @@ function renderDashboard(rows){
           <td style="font-family:monospace;font-size:11px;color:#777;">${v.cod||'—'}</td>
           <td><span class="pill pill-amber" style="font-size:10px;">${v.cor||'—'}</span></td>
           <td style="font-weight:500;font-size:12px;">${v.desc||key}</td>
-          <td><strong style="color:var(--rosa);">${fmtBRL(v.val)}</strong></td>
+          <td><strong style="color:#111;">${fmtBRL(v.val)}</strong></td>
           <td><span class="pill pill-verde">${fat?((v.val/fat)*100).toFixed(1)+'%':'—'}</span></td>
         </tr>`).join('')}</tbody></table>
       </div>
@@ -1259,7 +1259,7 @@ function renderDashboard(rows){
           <td><span class="pill pill-amber" style="font-size:10px;font-weight:700;">${v.cor||'—'}</span></td>
           <td style="font-weight:500;color:#111;">${v.desc}</td>
           <td><strong>${fmtN(v.qtde)}</strong></td>
-          <td>${fmtBRL(v.val)}</td>
+          <td style="font-weight:700;color:#111;">${fmtBRL(v.val)}</td>
         </tr>`).join('')).join('')}</tbody></table>
     </div>
 
@@ -1282,7 +1282,7 @@ function renderDashboard(rows){
         return `<tr>
           <td class="rank">${i<3?`<span style="font-size:16px;">${i===0?'🥇':i===1?'🥈':'🥉'}</span>`:(i+1)}</td>
           <td style="font-weight:700;color:#111;">${v}</td>
-          <td><strong style="color:var(--rosa);">${fmtBRL(d.val)}</strong></td>
+          <td><strong style="color:#111;">${fmtBRL(d.val)}</strong></td>
           <td>${fmtN(d.qtde)}</td>
           <td style="color:#555;">${fmtN(d.tix)}</td>
           <td style="color:#555;">${fmtBRL(d.ticketM)}</td>
