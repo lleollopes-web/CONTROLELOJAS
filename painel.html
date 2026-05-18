@@ -954,15 +954,39 @@ function renderDashboard(rows){
   const byStore={0:{name:'Iguatemi',val:0},1:{name:'RioMar',val:0},2:{name:'Calzedonia',val:0}};
   rows.forEach(r=>{if(byStore[r._storeIdx])byStore[r._storeIdx].val+=parseBR(r.VALOR_LIQUIDO_VENDA);});
 
-  // Vendedores — com tickets e ticket médio (inclui GERENTE)
+  // Vendedores — com tickets, ticket médio e qtdes por subgrupo específico
   const byVend={};
+  // Subgrupos Intimissimi
+  const SG_CALCINHA = ['INTIMO SLIPS'];
+  const SG_SUTIA    = ['INTIMO SOUTIENS'];
+  // Subgrupos Calzedonia
+  const SG_CALCA    = ['PANTACOLLANT','EASYWEAR PARTES DE BAIXO','EASYWEAR PARTES DE CIMA'];
+  const SG_MARE     = ['BEACHWEAR','BIKINI','INTERI','REGGISENI','SLIPPERIA'];
+
+  // Detecta se o contexto é calzedonia (storeIdx 2) ou intimissimi (0,1)
+  // Quando activeStore='all', mostramos colunas de acordo com a mistura
+  const sfVend = activeStore==='all'?[0,1,2]:[+activeStore];
+  const hasInti = sfVend.some(s=>s===0||s===1);
+  const hasCalz = sfVend.some(s=>s===2);
+
   rows.forEach(r=>{
     const v=(r.VENDEDOR_APELIDO||'').trim();
     if(!v) return;
-    if(!byVend[v]) byVend[v]={qtde:0,val:0,tickets:new Set()};
-    byVend[v].qtde+=(+r.QTDE_LIQUIDA||0);
+    if(!byVend[v]) byVend[v]={qtde:0,val:0,tickets:new Set(),calcinha:0,sutia:0,calca:0,mare:0};
+    const qtd=+r.QTDE_LIQUIDA||0;
+    byVend[v].qtde+=qtd;
     byVend[v].val+=parseBR(r.VALOR_LIQUIDO_VENDA);
     if(r.TICKET) byVend[v].tickets.add(r.TICKET);
+    const sg=(r.SUBGRUPO_PRODUTO||'').trim().replace(/\s+/g,' ').toUpperCase();
+    const si=r._storeIdx;
+    if(si===0||si===1){
+      if(SG_CALCINHA.includes(sg)) byVend[v].calcinha+=qtd;
+      if(SG_SUTIA.includes(sg))    byVend[v].sutia+=qtd;
+    }
+    if(si===2){
+      if(SG_CALCA.some(s=>sg===s.toUpperCase())) byVend[v].calca+=qtd;
+      if(SG_MARE.some(s=>sg===s.toUpperCase()))  byVend[v].mare+=qtd;
+    }
   });
   const topVend=Object.entries(byVend)
     .map(([v,d])=>([v,{...d,tix:d.tickets.size,ticketM:d.tickets.size?d.val/d.tickets.size:0}]))
@@ -1428,10 +1452,20 @@ function renderDashboard(rows){
         <th>Ticket Médio</th>
         <th>Peças / Ticket</th>
         <th>% Faturamento</th>
+        ${hasInti?'<th style="background:rgba(200,0,110,0.06);color:var(--rosa);">Calcinha</th><th style="background:rgba(200,0,110,0.06);color:var(--rosa);">Sutiã</th>':''}
+        ${hasCalz?'<th style="background:rgba(212,144,10,0.08);color:var(--amber);">Calça</th><th style="background:rgba(212,144,10,0.08);color:var(--amber);">Maré</th>':''}
       </tr></thead>
       <tbody>${topVend.map(([v,d],i)=>{
         const pct = fat ? ((d.val/fat)*100).toFixed(1)+'%' : '—';
         const pecasTicket = d.tix ? (d.qtde/d.tix).toFixed(1) : '—';
+        const intiCols = hasInti
+          ? `<td style="text-align:center;font-weight:700;background:rgba(200,0,110,0.03);">${d.calcinha>0?fmtN(d.calcinha):'—'}</td>
+             <td style="text-align:center;font-weight:700;background:rgba(200,0,110,0.03);">${d.sutia>0?fmtN(d.sutia):'—'}</td>`
+          : '';
+        const calzCols = hasCalz
+          ? `<td style="text-align:center;font-weight:700;background:rgba(212,144,10,0.04);">${d.calca>0?fmtN(d.calca):'—'}</td>
+             <td style="text-align:center;font-weight:700;background:rgba(212,144,10,0.04);">${d.mare>0?fmtN(d.mare):'—'}</td>`
+          : '';
         return `<tr>
           <td class="rank">${i<3?`<span style="font-size:16px;">${i===0?'🥇':i===1?'🥈':'🥉'}</span>`:(i+1)}</td>
           <td style="font-weight:700;color:#111;">${v}</td>
@@ -1441,6 +1475,7 @@ function renderDashboard(rows){
           <td style="color:#555;">${fmtBRL(d.ticketM)}</td>
           <td style="color:#555;font-weight:600;">${pecasTicket}</td>
           <td><span class="pill pill-verde">${pct}</span></td>
+          ${intiCols}${calzCols}
         </tr>`;
       }).join('')}</tbody></table>
     </div>
