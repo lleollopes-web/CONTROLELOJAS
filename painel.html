@@ -967,6 +967,139 @@ function renderDashboard(rows){
     .filter(([v,d])=>d.val!==0||d.qtde!==0)
     .sort((a,b)=>b[1].val-a[1].val).slice(0,15);
 
+  // ===== CARROS-CHEFE: top produtos por subgrupo com YoY =====
+  // Agrega 2025 e 2026 separados para comparativo
+  const sf2=activeStore==='all'?[0,1,2]:[+activeStore];
+  const rCC25=[], rCC26=[];
+  sf2.forEach(si=>{
+    (rawData[si+'_2025']||[]).forEach(r=>rCC25.push({...r,_storeIdx:si}));
+    (rawData[si+'_2026']||[]).forEach(r=>rCC26.push({...r,_storeIdx:si}));
+  });
+  const hasCC25=rCC25.length>0, hasCC26=rCC26.length>0;
+
+  // Helper: agrega faturamento por produto dentro de cada subgrupo
+  function aggBySGProd(rws){
+    const m={};
+    rws.forEach(r=>{
+      const sg=(r.SUBGRUPO_PRODUTO||'').trim().replace(/\s+/g,' ');
+      const cod=(r.PRODUTO||'').trim();
+      const desc=(r.DESC_PRODUTO||'').trim();
+      const cor=(r.COR_PRODUTO||'').trim();
+      if(!sg||sg==='NO SAP'||!cod) return;
+      const val=parseBR(r.VALOR_LIQUIDO_VENDA);
+      const qtd=+r.QTDE_LIQUIDA||0;
+      if(val===0&&qtd===0) return;
+      if(!m[sg]) m[sg]={total:0, prods:{}};
+      m[sg].total+=val;
+      const key=`${cod}||${cor}`;
+      if(!m[sg].prods[key]) m[sg].prods[key]={cod,desc,cor,val:0,qtde:0};
+      m[sg].prods[key].val+=val;
+      m[sg].prods[key].qtde+=qtd;
+    });
+    return m;
+  }
+
+  const ccAll  = aggBySGProd(rows);
+  const cc25   = aggBySGProd(rCC25);
+  const cc26   = aggBySGProd(rCC26);
+  const fatTot = rows.reduce((a,r)=>a+parseBR(r.VALOR_LIQUIDO_VENDA),0)||1;
+
+  // Monta lista de subgrupos ordenada por faturamento total (top 8)
+  const ccSubgrupos = Object.entries(ccAll)
+    .sort((a,b)=>b[1].total-a[1].total)
+    .slice(0,8);
+
+  // Gera HTML do módulo
+  const showYoY = hasCC25 && hasCC26 && document.getElementById('yearSel').value==='all';
+
+  const ccRows = ccSubgrupos.map(([sg, sgData])=>{
+    // Top 5 produtos do subgrupo por faturamento
+    const topProds = Object.entries(sgData.prods)
+      .sort((a,b)=>b[1].val-a[1].val)
+      .slice(0,5);
+
+    const sgPct = ((sgData.total/fatTot)*100).toFixed(1);
+    const sg25tot = cc25[sg]?.total||0;
+    const sg26tot = cc26[sg]?.total||0;
+    const sgYoy = sg25tot>0 ? ((sg26tot-sg25tot)/sg25tot*100) : null;
+    const sgYoyHtml = showYoY && sgYoy!==null
+      ? `<span style="font-size:11px;font-weight:700;color:${sgYoy>=0?'var(--verde)':'var(--coral)'};">
+           ${sgYoy>=0?'▲':'▼'} ${Math.abs(sgYoy).toFixed(1)}%
+         </span>`
+      : '';
+
+    const prodRows = topProds.map(([key, p], idx)=>{
+      const pPct = ((p.val/fatTot)*100).toFixed(2);
+      const p25 = cc25[sg]?.prods[key];
+      const p26 = cc26[sg]?.prods[key];
+      const yoy = (showYoY && p25 && p25.val>0 && p26)
+        ? ((p26.val - p25.val)/p25.val*100) : null;
+      const yoyCell = showYoY
+        ? `<td style="text-align:center;font-size:12px;font-weight:700;color:${yoy===null?'#bbb':yoy>=0?'var(--verde)':'var(--coral)'};">
+             ${yoy===null ? '—' : (yoy>=0?'▲':'▼')+' '+Math.abs(yoy).toFixed(1)+'%'}
+           </td>`
+        : '';
+      const fat25cell = showYoY
+        ? `<td style="font-size:11px;color:#888;text-align:right;">${p25?fmtBRL(p25.val):'—'}</td>`
+        : '';
+      const fat26cell = showYoY
+        ? `<td style="font-size:11px;color:#555;text-align:right;font-weight:600;">${p26?fmtBRL(p26.val):'—'}</td>`
+        : '';
+      return `<tr style="background:${idx%2===0?'#fff':'#fafafa'};">
+        <td style="text-align:center;font-weight:700;color:#bbb;font-size:12px;">${idx+1}</td>
+        <td style="font-family:monospace;font-size:11px;color:#777;white-space:nowrap;">${p.cod||'—'}</td>
+        <td style="font-size:12px;font-weight:500;color:#111;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${p.desc}">${p.desc||'—'}</td>
+        <td style="font-size:11px;color:#888;">${p.cor||'—'}</td>
+        <td style="text-align:right;font-weight:700;color:var(--rosa);font-size:12px;">${fmtBRL(p.val)}</td>
+        <td style="text-align:center;font-size:12px;color:#555;">${fmtN(p.qtde)}</td>
+        <td style="text-align:center;"><span style="font-size:10px;font-weight:700;background:rgba(200,0,110,0.08);color:var(--rosa);padding:2px 6px;border-radius:6px;">${pPct}%</span></td>
+        ${fat25cell}${fat26cell}${yoyCell}
+      </tr>`;
+    }).join('');
+
+    const yoyHeader = showYoY
+      ? `<th style="text-align:right;">2025</th><th style="text-align:right;">2026</th><th style="text-align:center;">YoY</th>`
+      : '';
+
+    return `<div style="background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,rgba(200,0,110,0.04),transparent);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:13px;font-weight:800;color:var(--rosa);text-transform:uppercase;letter-spacing:.5px;">⭐ ${sg}</span>
+          <span style="font-size:11px;color:#888;background:#f5f5f7;padding:2px 8px;border-radius:8px;font-weight:600;">${fmtBRL(sgData.total)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          ${sgYoyHtml}
+          <span style="font-size:12px;font-weight:700;color:#fff;background:var(--rosa);padding:3px 10px;border-radius:20px;">${sgPct}% do fat.</span>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;">
+          <thead>
+            <tr style="background:#f8f8fc;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#888;">
+              <th style="padding:8px 10px;text-align:center;">#</th>
+              <th style="padding:8px 10px;text-align:left;">Cód.</th>
+              <th style="padding:8px 10px;text-align:left;">Descrição</th>
+              <th style="padding:8px 10px;text-align:left;">Cor</th>
+              <th style="padding:8px 10px;text-align:right;">Faturamento</th>
+              <th style="padding:8px 10px;text-align:center;">Peças</th>
+              <th style="padding:8px 10px;text-align:center;">% Fat.</th>
+              ${yoyHeader}
+            </tr>
+          </thead>
+          <tbody>${prodRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+
+  const carroChefe = `
+    <div class="section-title">🏆 Carros-Chefe por Subgrupo</div>
+    <div style="margin-bottom:8px;padding:10px 14px;background:rgba(200,0,110,0.04);border:1px solid rgba(200,0,110,0.12);border-radius:10px;font-size:12px;color:#888;">
+      Top 5 produtos por faturamento em cada subgrupo · ${showYoY?'Com comparativo 2025 vs 2026':'Selecione "Todos os Anos" para ver comparativo YoY'}
+    </div>
+    ${ccRows}
+  `;
+
   // YoY — compara até a última data disponível de 2026
   const yr=document.getElementById('yearSel').value;
   const mnthYoy=document.getElementById('monthSel').value;
@@ -1135,6 +1268,9 @@ function renderDashboard(rows){
         </tr>`;
       }).join('')}</tbody></table>
     </div>
+
+    <!-- ===== CARROS-CHEFE ===== -->
+    ${carroChefe}
   `;
 
   // Chart helpers
