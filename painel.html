@@ -1044,20 +1044,33 @@ function renderDashboard(rows){
   const totYoyV=totV25>0?((totV26-totV25)/totV25*100):null;
   const totYoyQ=totQ25>0?((totQ26-totQ25)/totQ25*100):null;
 
-  const ccTableRows=sgSorted.map(([sg,d],idx)=>{
+
+  // Helper: ranking badge
+  function rankBadge(rank){
+    const isTop=rank<=8;
+    return isTop
+      ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--verde);color:#fff;font-size:11px;font-weight:800;">${rank}</span>`
+      : `<span style="color:#ccc;font-size:12px;font-weight:600;">${rank}</span>`;
+  }
+  // Sort by fat 2026 desc
+  const sgSorted26=[...sgSorted].sort((a,b)=>(sg26[b[0]]?.val||0)-(sg26[a[0]]?.val||0));
+  const ccTableRows=sgSorted26.map(([sg],idx)=>{
+    const rank=idx+1; const isTop=rank<=8;
     const v25=sg25[sg]||{val:0,qtde:0};
     const v26=sg26[sg]||{val:0,qtde:0};
+    const rowBg=isTop?(idx%2===0?'#fff':'#f4fff9'):(idx%2===0?'#fff':'#fafafa');
+    const bBot=isTop&&rank===8?'border-bottom:2px solid rgba(0,145,90,0.4);':'';
     const yoyV=v25.val>0?((v26.val-v25.val)/v25.val*100):null;
     const yoyQ=v25.qtde>0?((v26.qtde-v25.qtde)/v25.qtde*100):null;
     const cV=yoyV===null?'#bbb':yoyV>=0?'var(--verde)':'var(--coral)';
     const cQ=yoyQ===null?'#bbb':yoyQ>=0?'var(--verde)':'var(--coral)';
     const aV=yoyV===null?'—':(yoyV>=0?'▲':'▼')+' '+Math.abs(yoyV).toFixed(1)+'%';
     const aQ=yoyQ===null?'—':(yoyQ>=0?'▲':'▼')+' '+Math.abs(yoyQ).toFixed(1)+'%';
-    // Setas inline nas células 2026 (sem percentual — só seta)
     const q26cell=`<span style="font-weight:800;color:#111;">${fmtN(v26.qtde)}</span>${yoyQ!==null?` <span style="font-size:11px;font-weight:700;color:${cQ};">${yoyQ>=0?'▲':'▼'}</span>`:''}`;
     const v26cell=`<span style="font-weight:800;color:#111;">${fmtBRL(v26.val)}</span>${yoyV!==null?` <span style="font-size:11px;font-weight:700;color:${cV};">${yoyV>=0?'▲':'▼'}</span>`:''}`;
-    return `<tr style="background:${idx%2===0?'#fff':'#fafafa'};">
-      <td style="padding:10px 14px;font-weight:700;color:#111;font-size:13px;">${sg}</td>
+    return `<tr style="background:${rowBg};${bBot}">
+      <td style="padding:10px 8px;text-align:center;width:36px;">${rankBadge(rank)}</td>
+      <td style="padding:10px 14px;font-weight:${isTop?'800':'600'};color:#111;font-size:13px;">${sg}</td>
       <td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#111;">${fmtN(v25.qtde)}</td>
       <td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#111;">${fmtBRL(v25.val)}</td>
       <td style="padding:10px 14px;text-align:right;font-size:13px;">${q26cell}</td>
@@ -1075,6 +1088,7 @@ function renderDashboard(rows){
   const totQ26cell=`<span style="font-weight:800;color:#111;">${fmtN(totQ26)}</span>${totYoyQ!==null?` <span style="font-size:11px;font-weight:700;color:${totYoyQc};">${totYoyQ>=0?'▲':'▼'}</span>`:''}`;
   const totV26cell=`<span style="font-weight:800;color:#111;">${fmtBRL(totV26)}</span>${totYoyV!==null?` <span style="font-size:11px;font-weight:700;color:${totYoyVc};">${totYoyV>=0?'▲':'▼'}</span>`:''}`;
   const ccTotRow=`<tr style="background:#f0faf5;border-top:2px solid #ccc;">
+    <td style="padding:11px 8px;"></td>
     <td style="padding:11px 14px;font-size:13px;font-weight:800;color:#111;">TOTAL</td>
     <td style="padding:11px 14px;text-align:right;font-size:12px;font-weight:800;color:#111;">${fmtN(totQ25)}</td>
     <td style="padding:11px 14px;text-align:right;font-size:12px;font-weight:800;color:#111;">${fmtBRL(totV25)}</td>
@@ -1086,6 +1100,7 @@ function renderDashboard(rows){
 
   const ccYoyHeader='';
   const ccSubHeader=`<tr style="background:#f0f4f8;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#888;">
+    <th style="padding:7px 8px;text-align:center;">#</th>
     <th style="padding:7px 14px;text-align:left;"></th>
     <th style="padding:7px 14px;text-align:right;border-left:2px solid #e8e8e8;color:var(--muted);">Qtd. 2025</th>
     <th style="padding:7px 14px;text-align:right;color:var(--muted);">Fat. 2025</th>
@@ -1110,6 +1125,7 @@ function renderDashboard(rows){
         <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;">
           <thead>
             <tr style="background:#f8f8fc;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#555;font-weight:800;">
+              <th style="padding:10px 8px;text-align:center;width:36px;">#</th>
               <th style="padding:10px 14px;text-align:left;min-width:180px;">Subgrupo</th>
               <th colspan="2" style="padding:10px 14px;text-align:center;border-left:2px solid #e8e8e8;color:var(--muted);">2025</th>
               <th colspan="2" style="padding:10px 14px;text-align:center;border-left:2px solid #e8e8e8;color:#333;">2026</th>
@@ -1173,9 +1189,14 @@ function renderDashboard(rows){
     const maLbl25  = maNomeMes+' 2025 (completo)';
     const maLbl26  = `01/${String(mesAtivo+1).padStart(2,'0')} – ${String(ccLast26.getDate()).padStart(2,'0')}/${String(mesAtivo+1).padStart(2,'0')}/2026`;
 
-    const maRows = maSGKeys.map((sg,idx)=>{
+    // Sort by fat 2026 desc
+    const maSGKeysSorted=[...maSGKeys].sort((a,b)=>(maSG26[b]?.val||0)-(maSG26[a]?.val||0));
+    const maRows = maSGKeysSorted.map((sg,idx)=>{
+      const rank=idx+1; const isTop=rank<=8;
       const v25=maSG25[sg]||{val:0,qtde:0};
       const v26=maSG26[sg]||{val:0,qtde:0};
+      const rowBg=isTop?(idx%2===0?'#fff':'#f4faff'):(idx%2===0?'#fff':'#fafafa');
+      const bBot=isTop&&rank===8?'border-bottom:2px solid rgba(0,153,187,0.4);':'';
       const yV=v25.val>0?((v26.val-v25.val)/v25.val*100):null;
       const yQ=v25.qtde>0?((v26.qtde-v25.qtde)/v25.qtde*100):null;
       const cV=yV===null?'#bbb':yV>=0?'var(--verde)':'var(--coral)';
@@ -1184,8 +1205,12 @@ function renderDashboard(rows){
       const aQ=yQ===null?'—':(yQ>=0?'▲':'▼')+' '+Math.abs(yQ).toFixed(1)+'%';
       const q26c=`<span style="font-weight:800;color:#111;">${fmtN(v26.qtde)}</span>${yQ!==null?` <span style="font-size:11px;font-weight:700;color:${cQ};">${yQ>=0?'▲':'▼'}</span>`:''}`;
       const v26c=`<span style="font-weight:800;color:#111;">${fmtBRL(v26.val)}</span>${yV!==null?` <span style="font-size:11px;font-weight:700;color:${cV};">${yV>=0?'▲':'▼'}</span>`:''}`;
-      return `<tr style="background:${idx%2===0?'#fff':'#fafafa'};">
-        <td style="padding:10px 14px;font-weight:700;color:#111;font-size:13px;">${sg}</td>
+      const maRankBadge=isTop
+        ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--cyan);color:#fff;font-size:11px;font-weight:800;">${rank}</span>`
+        : `<span style="color:#ccc;font-size:12px;font-weight:600;">${rank}</span>`;
+      return `<tr style="background:${rowBg};${bBot}">
+        <td style="padding:10px 8px;text-align:center;width:36px;">${maRankBadge}</td>
+        <td style="padding:10px 14px;font-weight:${isTop?'800':'600'};color:#111;font-size:13px;">${sg}</td>
         <td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#111;">${fmtN(v25.qtde)}</td>
         <td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#111;">${fmtBRL(v25.val)}</td>
         <td style="padding:10px 14px;text-align:right;font-size:13px;">${q26c}</td>
@@ -1203,6 +1228,7 @@ function renderDashboard(rows){
     const maV26tot=`<span style="font-weight:800;color:#111;">${fmtBRL(maTotV26)}</span>${maTotYoyV!==null?` <span style="font-size:11px;font-weight:700;color:${maTotYoyVc};">${maTotYoyV>=0?'▲':'▼'}</span>`:''}`;
 
     const maTotRow=`<tr style="background:#f0faf5;border-top:2px solid #ccc;">
+      <td style="padding:11px 8px;"></td>
       <td style="padding:11px 14px;font-size:13px;font-weight:800;color:#111;">TOTAL</td>
       <td style="padding:11px 14px;text-align:right;font-size:12px;font-weight:800;color:#111;">${fmtN(maTotQ25)}</td>
       <td style="padding:11px 14px;text-align:right;font-size:12px;font-weight:800;color:#111;">${fmtBRL(maTotV25)}</td>
@@ -1226,12 +1252,14 @@ function renderDashboard(rows){
           <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;">
             <thead>
               <tr style="background:#f8f8fc;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#555;font-weight:800;">
+                <th style="padding:10px 8px;text-align:center;width:36px;">#</th>
                 <th style="padding:10px 14px;text-align:left;min-width:180px;">Subgrupo</th>
                 <th colspan="2" style="padding:10px 14px;text-align:center;border-left:2px solid #e8e8e8;color:var(--muted);">2025 — Mês Completo</th>
                 <th colspan="2" style="padding:10px 14px;text-align:center;border-left:2px solid #e8e8e8;color:var(--cyan);">2026 — Parcial</th>
                 <th colspan="2" style="padding:10px 14px;text-align:center;border-left:2px solid #e8e8e8;color:#555;">Crescimento</th>
               </tr>
               <tr style="background:#f0f4f8;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#888;">
+                <th style="padding:7px 8px;text-align:center;">#</th>
                 <th style="padding:7px 14px;text-align:left;"></th>
                 <th style="padding:7px 14px;text-align:right;border-left:2px solid #e8e8e8;color:var(--muted);">Qtd. 2025</th>
                 <th style="padding:7px 14px;text-align:right;color:var(--muted);">Fat. 2025</th>
