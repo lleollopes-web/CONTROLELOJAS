@@ -1001,7 +1001,7 @@ function renderDashboard(rows){
       <div class="chart-card d3"><div class="chart-title">Mix por Público</div><div style="height:260px;"><canvas id="cCat"></canvas></div></div>
     </div>
     <div class="chart-grid" style="grid-template-columns:1fr;">
-      <div class="chart-card d2"><div class="chart-title">Mix por Subgrupo (Faturamento)</div><div style="height:360px;"><canvas id="cSG"></canvas></div></div>
+      <div class="chart-card d2"><div class="chart-title">Mix por Subgrupo (Faturamento)</div><div style="height:460px;"><canvas id="cSG"></canvas></div></div>
     </div>
     ${activeStore==='all'?`<div class="chart-grid"><div class="chart-card d3" style="grid-column:1/-1;"><div class="chart-title">Faturamento por Loja</div><div style="height:220px;"><canvas id="cStore"></canvas></div></div></div>`:''}
 
@@ -1144,7 +1144,7 @@ const dOpts=(labels,data)=>{
 
 const dOptsSG=(labels,data)=>{
   return {responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'right',maxWidth:340,labels:{color:'#444',font:{family:'DM Sans',size:12},boxWidth:13,padding:8,
+    plugins:{legend:{position:'right',maxWidth:260,labels:{color:'#444',font:{family:'DM Sans',size:11},boxWidth:12,padding:7,
       generateLabels:(chart)=>{
         const ds=chart.data.datasets[0];
         const tot=ds.data.reduce((a,b)=>a+b,0);
@@ -1156,7 +1156,7 @@ const dOptsSG=(labels,data)=>{
     }},
     tooltip:{backgroundColor:'rgba(255,255,255,0.98)',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,titleColor:'#111',bodyColor:'#555',padding:12,cornerRadius:10,
       callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return ` ${ctx.label}: ${fmtBRL(ctx.raw)} (${t?((ctx.raw/t)*100).toFixed(1):0}%)`;}}}},
-    layout:{padding:{right:10}}
+    layout:{padding:{right:0,top:10,bottom:10}}
   };
 };
 
