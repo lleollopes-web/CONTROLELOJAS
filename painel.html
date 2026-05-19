@@ -1135,7 +1135,7 @@ function renderDashboard(rows){
     : `<span style="font-size:11px;color:#aaa;">Carregue ambos os anos para comparativo YoY</span>`;
 
   const carroChefe=`
-    <div class="section-title">📊 Mix por Subgrupo — Desempenho</div>
+    <div class="section-title">📊 Desempenho Anual Até ${fmtD(ccLast26)}</div>
     <div style="background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,rgba(0,145,90,0.04),transparent);">
         <span style="font-size:14px;font-weight:800;color:#111;">Subgrupos · Qty + Fat. ${hasCC?'com YoY':''}</span>
