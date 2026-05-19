@@ -958,17 +958,19 @@ function renderDashboard(rows){
     const p=(r.DESC_PRODUTO||'').trim().replace(/\s+/g,' ');
     const cod=(r.PRODUTO||'').trim();
     const cor=(r.COR_PRODUTO||'').trim();
+    const tam=(r.GRADE||r.TAMANHO||r.SIZE||'').toString().trim();
     if(!sg||!p||sg==='NO SAP'||sg===''||p==='NO SAP') return;
     const val=parseBR(r.VALOR_LIQUIDO_VENDA);
     const qtd=+r.QTDE_LIQUIDA||0;
-    // Incluir negativos (devoluções) — só excluir se ambos forem exatamente zero
     if(val===0&&qtd===0) return;
     if(!bySGTable[sg])bySGTable[sg]={};
-    // Chave: código + descrição + cor
     const key=`${cod}|${p}|${cor}`;
-    if(!bySGTable[sg][key])bySGTable[sg][key]={qtde:0,val:0,cod,desc:p,cor};
+    if(!bySGTable[sg][key])bySGTable[sg][key]={qtde:0,val:0,cod,desc:p,cor,sizes:{}};
     bySGTable[sg][key].qtde+=qtd;
     bySGTable[sg][key].val+=val;
+    if(tam&&qtd!==0){
+      bySGTable[sg][key].sizes[tam]=(bySGTable[sg][key].sizes[tam]||0)+qtd;
+    }
   });
   const topBySG=Object.entries(bySGTable)
     .map(([sub,prods])=>{const items=Object.values(prods).sort((a,b)=>b.qtde-a.qtde||b.val-a.val).slice(0,10);return{sub,items,total:items.reduce((a,b)=>a+b.qtde,0)};})
@@ -1042,7 +1044,9 @@ function renderDashboard(rows){
   }
 
   // Módulo Desempenho: sempre de 01/01 até a data final do filtro (ou última disponível)
-  const sfCC=activeStore==='all'?[0,1,2]:[+activeStore];
+  // sfCC respeita restrição de loja do login e seleção ativa
+  const _allowedCC = userStoreRestriction!==null?[userStoreRestriction]:[0,1,2];
+  const sfCC = activeStore==='all' ? _allowedCC : [+activeStore].filter(s=>_allowedCC.includes(s));
   const ccAllRows26=[], ccAllRows25=[];
   sfCC.forEach(si=>{
     (rawData[si+'_2026']||[]).forEach(r=>ccAllRows26.push(r));
@@ -1223,7 +1227,8 @@ function renderDashboard(rows){
     const lastDay25= new Date(2025, mesAtivo+1, 0).getDate(); // último dia do mês
     const maTo25   = new Date(2025, mesAtivo, lastDay25, 23, 59, 59);
 
-    const sfMA = activeStore==='all'?[0,1,2]:[+activeStore];
+    const _allowedMA = userStoreRestriction!==null?[userStoreRestriction]:[0,1,2];
+    const sfMA = activeStore==='all' ? _allowedMA : [+activeStore].filter(s=>_allowedMA.includes(s));
     const maRows25=[], maRows26=[];
     sfMA.forEach(si=>{
       (rawData[si+'_2025']||[]).forEach(r=>{
@@ -1467,18 +1472,34 @@ function renderDashboard(rows){
 
     <div class="section-title">Top 10 por Subgrupo</div>
     <div class="table-wrap d2">
-      <div class="table-header"><h3>5 Produtos Mais Vendidos por Subgrupo</h3></div>
-      <table><thead><tr><th>Subgrupo</th><th>#</th><th>Código</th><th>Cor</th><th>Produto</th><th>Qtde</th><th>Faturamento</th></tr></thead>
-      <tbody>${topBySG.map(({sub,items},gi)=>items.map((v,i)=>`
+      <div class="table-header" style="display:flex;align-items:center;justify-content:space-between;">
+        <h3>10 Produtos Mais Vendidos por Subgrupo</h3>
+        <button id="btnToggleSizes" onclick="(function(){const show=document.getElementById('btnToggleSizes').dataset.on!=='1';document.querySelectorAll('.sz-col').forEach(el=>el.style.display=show?'':'none');document.getElementById('btnToggleSizes').dataset.on=show?'1':'0';document.getElementById('btnToggleSizes').textContent=show?'🔽 Ocultar Tamanhos':'📐 Ver Tamanhos';})()"
+          style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:#555;">
+          📐 Ver Tamanhos
+        </button>
+      </div>
+      <table><thead><tr>
+        <th>Subgrupo</th><th>#</th><th>Código</th><th>Cor</th><th>Produto</th>
+        <th class="sz-col" style="display:none;">Tamanhos</th>
+        <th>Qtde</th><th>Faturamento</th>
+      </tr></thead>
+      <tbody>${topBySG.map(({sub,items},gi)=>items.map((v,i)=>{
+        const sizesHtml=Object.entries(v.sizes||{})
+          .sort((a,b)=>b[1]-a[1])
+          .map(([s,q])=>`<span style="display:inline-block;background:#f0f0f8;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;color:#555;margin:1px;">${s}:${q}</span>`)
+          .join('');
+        return `
         <tr style="background:${i%2===0?BG_LIST[gi%BG_LIST.length]:'#fff'};">
           ${i===0?`<td rowspan="${items.length}" style="font-weight:700;font-size:12px;vertical-align:middle;padding:14px 16px;color:${PALETTE[gi%PALETTE.length]};border-right:3px solid ${PALETTE[gi%PALETTE.length]};background:${BG_LIST[gi%BG_LIST.length]};">${sub}</td>`:''}
           <td class="rank">${i+1}</td>
           <td style="font-family:monospace;font-size:11px;color:#777;">${v.cod||'—'}</td>
           <td><span class="pill pill-amber" style="font-size:10px;font-weight:700;">${v.cor||'—'}</span></td>
           <td style="font-weight:500;color:#111;">${v.desc}</td>
+          <td class="sz-col" style="display:none;max-width:200px;line-height:1.8;">${sizesHtml||'—'}</td>
           <td><strong>${fmtN(v.qtde)}</strong></td>
           <td style="font-weight:700;color:#111;">${fmtBRL(v.val)}</td>
-        </tr>`).join('')).join('')}</tbody></table>
+        </tr>`}).join('')).join('')}</tbody></table>
     </div>
 
     <div class="section-title">Performance de Vendedores</div>
