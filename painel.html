@@ -295,6 +295,35 @@ const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/lleollopes-web/CONTRO
 const GITHUB_REPO   = 'lleollopes-web/CONTROLELOJAS';
 const GITHUB_BRANCH = 'main';
 let GITHUB_TOKEN = window.__GH_TOKEN__ || localStorage.getItem('gh_token') || '';
+// ===== TRADUTOR DE SUBGRUPOS =====
+const SG_TRANSLATE = {
+  'CAMISOLA MANGA COMPRIDA': 'MALHARIA (CL CLD)',
+  'TOP':                     'MALHARIA (LT LTD)',
+  'INTIMO SLIPS':            'CALCINHA',
+  'INTIMO SOUTIENS':         'SUTIÃ',
+  'COMBINACAO':              'LINGERIE (LC LLD LBD LCD)',
+  'PARTI ALTE':              'MALHARIA (LTD CL CLD CGD CMD LT)',
+  'PARTI BASSE':             'PIJAMA (PDL PDC PD PC)',
+  'VESTAGLIA':               'PIJAMA (PV PVD)',
+  'ACCESSORI':               'TOP (MODT)',
+  'ACESSORIOS':              'TOP (MODT)',
+  'AUTOREGGENTI E CALZE':    'MEIA CALÇA (LIA MODA REA)',
+  'CALZECOLL CALZINI':       'MEIA CALÇA (LIZ DCZ MODZ)',
+  'COLLANT':                 'MEIA CALÇA (MIC LIC MODC MOBC)',
+  'COLLANT LINEA SHAPING':   'LIC',
+  'GAMBALETTI':              'LIG MODG MIG',
+  'LONGUETTE':               'LONGUETTE',
+  'PANTACOLLANT':            'CALÇA (MIP MODP)',
+  'CORTO':                   'MEIA CURTA (DC UC BC)',
+  'LUNGO':                   'MEIA LONGA (DL)',
+  'EASYWEAR PARTES DE BAIXO':'ACADEMIA (MODP–TREINO)',
+  'EASYWEAR PARTES DE CIMA': 'ACADEMIA (MODT–TREINO)',
+  'BEACHWEAR':               'MARÉ (PA 0BDA 0BDP)',
+  'REGGISENI':               'MARÉ (BIQUÍNI - SUTIÃ)',
+  'SLIPPERIA':               'MARÉ (BIQUÍNI - CALCINHA)',
+};
+function sgLabel(sg){ return SG_TRANSLATE[sg.toUpperCase()] || sg; }
+
 const STORES = [
   {name:'Intimissimi Iguatemi',short:'Iguatemi',  files:{2025:'2025-89-IGUATEMI.CSV',2026:'2026-89-IGUATEMI.CSV'},color:'#E91E8C'},
   {name:'Intimissimi RioMar',  short:'RioMar',    files:{2025:'2025-89-RIOMAR.CSV',  2026:'2026-89-RIOMAR.CSV'},  color:'#0099BB'},
@@ -1090,7 +1119,7 @@ function renderDashboard(rows){
     const v26cell=`<span style="font-weight:800;color:#111;">${fmtBRL(v26.val)}</span>${yoyV!==null?` <span style="font-size:11px;font-weight:700;color:${cV};">${yoyV>=0?'▲':'▼'}</span>`:''}`;
     return `<tr style="background:${rowBg};${bBot}">
       <td style="padding:10px 8px;text-align:center;width:36px;">${rankBadge(rank)}</td>
-      <td style="padding:10px 14px;font-weight:${isTop?'800':'600'};color:#111;font-size:13px;">${sg}</td>
+      <td style="padding:10px 14px;font-weight:${isTop?'800':'600'};color:#111;font-size:13px;" title="${sg}">${sgLabel(sg)}</td>
       <td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#111;">${fmtN(v25.qtde)}</td>
       <td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#111;">${fmtBRL(v25.val)}</td>
       <td style="padding:10px 14px;text-align:right;font-size:13px;">${q26cell}</td>
@@ -1230,7 +1259,7 @@ function renderDashboard(rows){
         : `<span style="color:#ccc;font-size:12px;font-weight:600;">${rank}</span>`;
       return `<tr style="background:${rowBg};${bBot}">
         <td style="padding:10px 8px;text-align:center;width:36px;">${maRankBadge}</td>
-        <td style="padding:10px 14px;font-weight:${isTop?'800':'600'};color:#111;font-size:13px;">${sg}</td>
+        <td style="padding:10px 14px;font-weight:${isTop?'800':'600'};color:#111;font-size:13px;" title="${sg}">${sgLabel(sg)}</td>
         <td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#111;">${fmtN(v25.qtde)}</td>
         <td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#111;">${fmtBRL(v25.val)}</td>
         <td style="padding:10px 14px;text-align:right;font-size:13px;">${q26c}</td>
@@ -1613,7 +1642,7 @@ const dOptsSG=(labels,data)=>{
   if(cCt)charts.cat=new Chart(cCt,{type:'doughnut',data:{labels:catKeys,datasets:[{data:catData,backgroundColor:catColors,borderWidth:2,borderColor:'#fff',hoverOffset:6}]},options:dOpts(catKeys,catData)});
 
   const sgE=Object.entries(bySGChart).sort((a,b)=>b[1]-a[1]);
-  const sgLabels=sgE.map(([k])=>k);
+  const sgLabels=sgE.map(([k])=>sgLabel(k));
   const sgData=sgE.map(([,v])=>v);
   const sgColors=PALETTE.concat(['#FF6BBE','#00B4D8','#F77F00','#4CC9F0','#06D6A0','#7B61FF']).slice(0,sgE.length);
   const cSg=document.getElementById('cSG');
