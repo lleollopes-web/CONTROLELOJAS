@@ -958,7 +958,7 @@ function renderDashboard(rows){
     const p=(r.DESC_PRODUTO||'').trim().replace(/\s+/g,' ');
     const cod=(r.PRODUTO||'').trim();
     const cor=(r.COR_PRODUTO||'').trim();
-    const tam=(r.GRADE||r.TAMANHO||r.SIZE||'').toString().trim();
+    const tam=(r.TAM||'').toString().trim();
     if(!sg||!p||sg==='NO SAP'||sg===''||p==='NO SAP') return;
     const val=parseBR(r.VALOR_LIQUIDO_VENDA);
     const qtd=+r.QTDE_LIQUIDA||0;
@@ -1480,8 +1480,7 @@ function renderDashboard(rows){
         </button>
       </div>
       <table><thead><tr>
-        <th>Subgrupo</th><th>#</th><th>Código</th><th>Cor</th><th>Produto</th>
-        <th class="sz-col" style="display:none;">Tamanhos</th>
+        <th>Subgrupo</th><th>#</th><th style="color:#111;">Código</th><th style="color:#111;">Cor</th><th class="sz-col" style="display:none;color:#111;">Tamanhos</th><th style="color:#111;">Produto</th>
         <th>Qtde</th><th>Faturamento</th>
       </tr></thead>
       <tbody>${topBySG.map(({sub,items},gi)=>items.map((v,i)=>{
@@ -1492,11 +1491,11 @@ function renderDashboard(rows){
         return `
         <tr style="background:${i%2===0?BG_LIST[gi%BG_LIST.length]:'#fff'};">
           ${i===0?`<td rowspan="${items.length}" style="font-weight:700;font-size:12px;vertical-align:middle;padding:14px 16px;color:${PALETTE[gi%PALETTE.length]};border-right:3px solid ${PALETTE[gi%PALETTE.length]};background:${BG_LIST[gi%BG_LIST.length]};">${sub}</td>`:''}
-          <td class="rank">${i+1}</td>
-          <td style="font-family:monospace;font-size:11px;color:#777;">${v.cod||'—'}</td>
-          <td><span class="pill pill-amber" style="font-size:10px;font-weight:700;">${v.cor||'—'}</span></td>
-          <td style="font-weight:500;color:#111;">${v.desc}</td>
-          <td class="sz-col" style="display:none;max-width:200px;line-height:1.8;">${sizesHtml||'—'}</td>
+          <td class="rank" style="font-size:13px;font-weight:700;color:#111;">${i+1}</td>
+          <td style="font-family:monospace;font-size:13px;font-weight:700;color:#111;">${v.cod||'—'}</td>
+          <td style="font-size:13px;font-weight:700;color:#111;">${v.cor||'—'}</td>
+          <td class="sz-col" style="display:none;max-width:220px;line-height:2;">${sizesHtml||'—'}</td>
+          <td style="font-weight:700;color:#111;font-size:13px;">${v.desc}</td>
           <td><strong>${fmtN(v.qtde)}</strong></td>
           <td style="font-weight:700;color:#111;">${fmtBRL(v.val)}</td>
         </tr>`}).join('')).join('')}</tbody></table>
