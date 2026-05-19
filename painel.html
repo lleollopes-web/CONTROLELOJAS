@@ -971,7 +971,7 @@ function renderDashboard(rows){
     bySGTable[sg][key].val+=val;
   });
   const topBySG=Object.entries(bySGTable)
-    .map(([sub,prods])=>{const items=Object.values(prods).sort((a,b)=>b.qtde-a.qtde||b.val-a.val).slice(0,5);return{sub,items,total:items.reduce((a,b)=>a+b.qtde,0)};})
+    .map(([sub,prods])=>{const items=Object.values(prods).sort((a,b)=>b.qtde-a.qtde||b.val-a.val).slice(0,10);return{sub,items,total:items.reduce((a,b)=>a+b.qtde,0)};})
     .filter(x=>x.total>0)
     .sort((a,b)=>b.total-a.total||b.items.reduce((s,i)=>s+i.val,0)-a.items.reduce((s,i)=>s+i.val,0)).slice(0,8);
 
@@ -1041,7 +1041,7 @@ function renderDashboard(rows){
     return m;
   }
 
-  // Módulo Desempenho: sempre de 01/01 até a última data disponível de cada ano (ignorar filtro de data)
+  // Módulo Desempenho: sempre de 01/01 até a data final do filtro (ou última disponível)
   const sfCC=activeStore==='all'?[0,1,2]:[+activeStore];
   const ccAllRows26=[], ccAllRows25=[];
   sfCC.forEach(si=>{
@@ -1049,9 +1049,19 @@ function renderDashboard(rows){
     (rawData[si+'_2025']||[]).forEach(r=>ccAllRows25.push(r));
   });
 
-  // Última data disponível em 2026
+  // Usa dateTo do filtro se definido, senão última data disponível em 2026
+  const _ccToVal=(document.getElementById('dateTo')?.value||'').trim();
   let ccLast26=null;
-  ccAllRows26.forEach(r=>{const dt=parseDate(r.DATA_VENDA);if(dt&&(!ccLast26||dt>ccLast26))ccLast26=dt;});
+  if(_ccToVal){
+    const[ty,tm,td]=_ccToVal.split('-').map(Number);
+    const _toDate=new Date(ty,tm-1,td,23,59,59);
+    // Só usa o filtro se for 2026
+    if(ty===2026) ccLast26=_toDate;
+  }
+  if(!ccLast26){
+    // Fallback: última data disponível nos dados de 2026
+    ccAllRows26.forEach(r=>{const dt=parseDate(r.DATA_VENDA);if(dt&&(!ccLast26||dt>ccLast26))ccLast26=dt;});
+  }
 
   // 2026: 01/01/2026 até ccLast26
   const ccRows26 = ccLast26
@@ -1198,9 +1208,16 @@ function renderDashboard(rows){
 
   let modMesHtml='';
   if(mesAtivo!==null && anoMesAtivo===2026){
-    // 2026: do dia 1 do mês final até ccLast26
+    // 2026: do dia 1 do mês final até ccLast26 (respeitando filtro dateTo)
     const maFrom26 = new Date(2026, mesAtivo, 1, 0, 0, 0);
-    const maTo26   = new Date(2026, mesAtivo, ccLast26.getDate(), 23, 59, 59);
+    // Usa dateTo do filtro se for no mesmo mês, senão usa ccLast26
+    const _mesToVal=(document.getElementById('dateTo')?.value||'').trim();
+    let _maLastDay=ccLast26.getDate();
+    if(_mesToVal){
+      const[ty,tm,td]=_mesToVal.split('-').map(Number);
+      if(ty===2026&&(tm-1)===mesAtivo) _maLastDay=td;
+    }
+    const maTo26   = new Date(2026, mesAtivo, _maLastDay, 23, 59, 59);
     // 2025: mês completo equivalente
     const maFrom25 = new Date(2025, mesAtivo, 1, 0, 0, 0);
     const lastDay25= new Date(2025, mesAtivo+1, 0).getDate(); // último dia do mês
@@ -1448,7 +1465,7 @@ function renderDashboard(rows){
 
     </div>
 
-    <div class="section-title">Top 5 por Subgrupo</div>
+    <div class="section-title">Top 10 por Subgrupo</div>
     <div class="table-wrap d2">
       <div class="table-header"><h3>5 Produtos Mais Vendidos por Subgrupo</h3></div>
       <table><thead><tr><th>Subgrupo</th><th>#</th><th>Código</th><th>Cor</th><th>Produto</th><th>Qtde</th><th>Faturamento</th></tr></thead>
