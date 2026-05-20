@@ -295,34 +295,54 @@ const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/lleollopes-web/CONTRO
 const GITHUB_REPO   = 'lleollopes-web/CONTROLELOJAS';
 const GITHUB_BRANCH = 'main';
 let GITHUB_TOKEN = window.__GH_TOKEN__ || localStorage.getItem('gh_token') || '';
-// ===== TRADUTOR DE SUBGRUPOS =====
+// ===== TRADUTOR DE SUBGRUPOS — por loja =====
+// storeIdx: 0,1 = Intimissimi | 2 = Calzedonia | null = sem tradução específica
 const SG_TRANSLATE = {
-  'CAMISOLA MANGA COMPRIDA': 'MALHARIA (CL CLD)',
-  'TOP':                     'MALHARIA (LT LTD)',
-  'INTIMO SLIPS':            'CALCINHA',
-  'INTIMO SOUTIENS':         'SUTIÃ',
-  'COMBINACAO':              'LINGERIE (LC LLD LBD LCD)',
-  'PARTI ALTE':              'MALHARIA (LTD CL CLD CGD CMD LT)',
-  'PARTI BASSE':             'PIJAMA (PDL PDC PD PC)',
-  'VESTAGLIA':               'PIJAMA (PV PVD)',
-  'ACCESSORI':               'TOP (MODT)',
-  'ACESSORIOS':              'TOP (MODT)',
-  'AUTOREGGENTI E CALZE':    'MEIA CALÇA (LIA MODA REA)',
-  'CALZECOLL CALZINI':       'MEIA CALÇA (LIZ DCZ MODZ)',
-  'COLLANT':                 'MEIA CALÇA (MIC LIC MODC MOBC)',
-  'COLLANT LINEA SHAPING':   'LIC',
-  'GAMBALETTI':              'LIG MODG MIG',
-  'LONGUETTE':               'LONGUETTE',
-  'PANTACOLLANT':            'CALÇA (MIP MODP)',
-  'CORTO':                   'MEIA CURTA (DC UC BC)',
-  'LUNGO':                   'MEIA LONGA (DL)',
-  'EASYWEAR PARTES DE BAIXO':'ACADEMIA (MODP–TREINO)',
-  'EASYWEAR PARTES DE CIMA': 'ACADEMIA (MODT–TREINO)',
-  'BEACHWEAR':               'MARÉ (PA 0BDA 0BDP)',
-  'REGGISENI':               'MARÉ (BIQUÍNI - SUTIÃ)',
-  'SLIPPERIA':               'MARÉ (BIQUÍNI - CALCINHA)',
+  // Intimissimi (storeIdx 0 e 1)
+  'INTI:ACESSORIOS':              'ACESSORIOS',
+  'INTI:CAMISOLA MANGA COMPRIDA': 'MALHARIA (CL CLD)',
+  'INTI:TOP':                     'MALHARIA (LT LTD)',
+  'INTI:INTIMO SLIPS':            'CALCINHA',
+  'INTI:INTIMO SOUTIENS':         'SUTIÃ',
+  'INTI:COMBINACAO':              'LINGERIE (LC LLD LBD LCD)',
+  'INTI:PARTI ALTE':              'MALHARIA (LTD CL CLD CGD CMD LT)',
+  'INTI:PARTI BASSE':             'PIJAMA (PDL PDC PD PC)',
+  'INTI:VESTAGLIA':               'PIJAMA (PV PVD)',
+  // Calzedonia (storeIdx 2)
+  'CALZ:ACESSORIOS':              'ACESSORIOS',
+  'CALZ:ACCESSORI':               'TOP (MODT)',
+  'CALZ:AUTOREGGENTI E CALZE':    'MEIA CALÇA (LIA MODA REA)',
+  'CALZ:CALZECOLL CALZINI':       'MEIA CALÇA (LIZ DCZ MODZ)',
+  'CALZ:COLLANT':                 'MEIA CALÇA (MIC LIC MODC MOBC)',
+  'CALZ:COLLANT LINEA SHAPING':   'LIC',
+  'CALZ:GAMBALETTI':              'LIG MODG MIG',
+  'CALZ:LONGUETTE':               'LONGUETTE',
+  'CALZ:PANTACOLLANT':            'CALÇA (MIP MODP)',
+  'CALZ:CORTO':                   'MEIA CURTA (DC UC BC)',
+  'CALZ:LUNGO':                   'MEIA LONGA (DL)',
+  'CALZ:EASYWEAR PARTES DE BAIXO':'ACADEMIA (MODP–TREINO)',
+  'CALZ:EASYWEAR PARTES DE CIMA': 'ACADEMIA (MODT–TREINO)',
+  'CALZ:BEACHWEAR':               'MARÉ (PA 0BDA 0BDP)',
+  'CALZ:REGGISENI':               'MARÉ (BIQUÍNI - SUTIÃ)',
+  'CALZ:SLIPPERIA':               'MARÉ (BIQUÍNI - CALCINHA)',
 };
-function sgLabel(sg){ return SG_TRANSLATE[sg.toUpperCase()] || sg; }
+
+// sg = nome do subgrupo, storeIdxes = array dos índices ativos no contexto
+function sgLabel(sg, storeIdxes){
+  const key = sg.toUpperCase().replace(/\s+/g,' ');
+  // Se contexto misto (all), tenta inti primeiro, depois calz
+  const idxs = storeIdxes || [0,1,2];
+  const hasInti = idxs.some(s=>s===0||s===1);
+  const hasCalz = idxs.some(s=>s===2);
+  if(hasInti && !hasCalz){
+    return SG_TRANSLATE['INTI:'+key] || sg;
+  }
+  if(hasCalz && !hasInti){
+    return SG_TRANSLATE['CALZ:'+key] || sg;
+  }
+  // Misto: prefere inti se existir, senão calz, senão original
+  return SG_TRANSLATE['INTI:'+key] || SG_TRANSLATE['CALZ:'+key] || sg;
+}
 
 const STORES = [
   {name:'Intimissimi Iguatemi',short:'Iguatemi',  files:{2025:'2025-89-IGUATEMI.CSV',2026:'2026-89-IGUATEMI.CSV'},color:'#E91E8C'},
@@ -891,6 +911,8 @@ function applyFilters(){
     alertEl.style.display='none';
   }
   const rows=getFilteredRows();
+  // Índices ativos para sgLabel
+  const _stIdxs = userStoreRestriction!==null?[userStoreRestriction]:(activeStore==='all'?[0,1,2]:[+activeStore]);
   if(!rows.length){
     let minDate=null,maxDate=null;
     Object.values(rawData).forEach(sr=>sr.forEach(r=>{
@@ -1133,7 +1155,7 @@ function renderDashboard(rows){
     const v26cell=`<span style="font-weight:800;color:#111;">${fmtBRL(v26.val)}</span>${yoyV!==null?` <span style="font-size:11px;font-weight:700;color:${cV};">${yoyV>=0?'▲':'▼'}</span>`:''}`;
     return `<tr style="background:${rowBg};${bBot}">
       <td style="padding:10px 8px;text-align:center;width:36px;">${rankBadge(rank)}</td>
-      <td style="padding:10px 14px;font-weight:${isTop?'800':'600'};color:#111;font-size:13px;" title="${sg}">${sgLabel(sg)}</td>
+      <td style="padding:10px 14px;font-weight:${isTop?'800':'600'};color:#111;font-size:13px;" title="${sg}">${sgLabel(sg,sfCC)}</td>
       <td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#111;">${fmtN(v25.qtde)}</td>
       <td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#111;">${fmtBRL(v25.val)}</td>
       <td style="padding:10px 14px;text-align:right;font-size:13px;">${q26cell}</td>
@@ -1281,7 +1303,7 @@ function renderDashboard(rows){
         : `<span style="color:#ccc;font-size:12px;font-weight:600;">${rank}</span>`;
       return `<tr style="background:${rowBg};${bBot}">
         <td style="padding:10px 8px;text-align:center;width:36px;">${maRankBadge}</td>
-        <td style="padding:10px 14px;font-weight:${isTop?'800':'600'};color:#111;font-size:13px;" title="${sg}">${sgLabel(sg)}</td>
+        <td style="padding:10px 14px;font-weight:${isTop?'800':'600'};color:#111;font-size:13px;" title="${sg}">${sgLabel(sg,sfCC)}</td>
         <td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#111;">${fmtN(v25.qtde)}</td>
         <td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#111;">${fmtBRL(v25.val)}</td>
         <td style="padding:10px 14px;text-align:right;font-size:13px;">${q26c}</td>
@@ -1490,7 +1512,7 @@ function renderDashboard(rows){
           .join('');
         return `
         <tr style="background:${i%2===0?BG_LIST[gi%BG_LIST.length]:'#fff'};">
-          ${i===0?`<td rowspan="${items.length}" style="font-weight:700;font-size:12px;vertical-align:middle;padding:14px 16px;color:${PALETTE[gi%PALETTE.length]};border-right:3px solid ${PALETTE[gi%PALETTE.length]};background:${BG_LIST[gi%BG_LIST.length]};">${sub}</td>`:''}
+          ${i===0?`<td rowspan="${items.length}" style="font-weight:700;font-size:12px;vertical-align:middle;padding:14px 16px;color:${PALETTE[gi%PALETTE.length]};border-right:3px solid ${PALETTE[gi%PALETTE.length]};background:${BG_LIST[gi%BG_LIST.length]};">${sgLabel(sub,_stIdxs)}</td>`:''}
           <td class="rank" style="font-size:13px;font-weight:700;color:#111;">${i+1}</td>
           <td style="font-family:monospace;font-size:13px;font-weight:700;color:#111;">${v.cod||'—'}</td>
           <td style="font-size:13px;font-weight:700;color:#111;">${v.cor||'—'}</td>
@@ -1679,7 +1701,7 @@ const dOptsSG=(labels,data)=>{
   if(cCt)charts.cat=new Chart(cCt,{type:'doughnut',data:{labels:catKeys,datasets:[{data:catData,backgroundColor:catColors,borderWidth:2,borderColor:'#fff',hoverOffset:6}]},options:dOpts(catKeys,catData)});
 
   const sgE=Object.entries(bySGChart).sort((a,b)=>b[1]-a[1]);
-  const sgLabels=sgE.map(([k])=>sgLabel(k));
+  const sgLabels=sgE.map(([k])=>sgLabel(k,_stIdxs));
   const sgData=sgE.map(([,v])=>v);
   const sgColors=PALETTE.concat(['#FF6BBE','#00B4D8','#F77F00','#4CC9F0','#06D6A0','#7B61FF']).slice(0,sgE.length);
   const cSg=document.getElementById('cSG');
