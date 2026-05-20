@@ -1050,7 +1050,7 @@ function renderDashboard(rows){
   // rows já está filtrado pelo filtro global (loja + período selecionado)
   // Para YoY: extraímos de rows as de 2026, e espelhamos o mesmo período em 2025
 
-  function aggSG(rws){
+  const aggSG=(rws)=>{
     const m={};
     rws.forEach(r=>{
       const sg=(r.SUBGRUPO_PRODUTO||'').trim().replace(/\s+/g,' ');
@@ -1063,7 +1063,7 @@ function renderDashboard(rows){
       m[sg].qtde+=qtd;
     });
     return m;
-  }
+  };
 
   // Módulo Desempenho: sempre de 01/01 até a data final do filtro (ou última disponível)
   // sfCC respeita restrição de loja do login e seleção ativa
@@ -1131,12 +1131,12 @@ function renderDashboard(rows){
 
 
   // Helper: ranking badge
-  function rankBadge(rank){
+  const rankBadge=(rank)=>{
     const isTop=rank<=8;
     return isTop
       ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--verde);color:#fff;font-size:11px;font-weight:800;">${rank}</span>`
       : `<span style="color:#ccc;font-size:12px;font-weight:600;">${rank}</span>`;
-  }
+  };
   // Sort by fat 2026 desc
   const sgSorted26=[...sgSorted].sort((a,b)=>(sg26[b[0]]?.val||0)-(sg26[a[0]]?.val||0));
   const ccTableRows=sgSorted26.map(([sg],idx)=>{
