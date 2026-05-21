@@ -1518,7 +1518,7 @@ function renderDashboard(rows){
       <tbody>${topBySG.map(({sub,items},gi)=>items.map((v,i)=>{
         const sizesHtml=Object.entries(v.sizes||{})
           .sort((a,b)=>b[1]-a[1])
-          .map(([s,q])=>`<span style="display:inline-block;background:#f0f0f8;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;color:#555;margin:1px;">${s}:${q}</span>`)
+          .map(([s,q])=>`<span style="display:inline-block;background:#f0f0f8;border:1px solid #d8d8e8;border-radius:6px;padding:3px 8px;font-size:13px;font-weight:700;color:#333;margin:2px;">${s}=${q}</span>`)
           .join('');
         return `
         <tr style="background:${i%2===0?BG_LIST[gi%BG_LIST.length]:'#fff'};">
