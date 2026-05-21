@@ -925,7 +925,16 @@ function applyFilters(){
     document.getElementById('mainContent').innerHTML=`<div class="empty"><div class="empty-icon">📭</div><h3>Nenhum dado para este período</h3><p>O intervalo selecionado não contém registros.</p>${rangeMsg}<button class="btn-primary" style="margin-top:20px;" onclick="resetDateRange()">🔄 Ver todos os dados</button></div>`;
     return;
   }
-  renderDashboard(rows);
+  try {
+    renderDashboard(rows);
+  } catch(e) {
+    console.error('renderDashboard error:', e);
+    document.getElementById('mainContent').innerHTML = `
+      <div style="padding:40px;background:#fff3f3;border:2px solid red;border-radius:12px;margin:20px;font-family:monospace;">
+        <h3 style="color:red;">⚠️ Erro ao renderizar dashboard</h3>
+        <pre style="font-size:12px;white-space:pre-wrap;">${e.message}\n\n${e.stack}</pre>
+      </div>`;
+  }
 }
 
 /* RENDER */
