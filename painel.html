@@ -913,6 +913,7 @@ function applyFilters(){
   const rows=getFilteredRows();
   // Índices ativos para sgLabel
   const _stIdxs = userStoreRestriction!==null?[userStoreRestriction]:(activeStore==='all'?[0,1,2]:[+activeStore]);
+  window._dashStIdxs = _stIdxs;
   if(!rows.length){
     let minDate=null,maxDate=null;
     Object.values(rawData).forEach(sr=>sr.forEach(r=>{
@@ -1521,7 +1522,7 @@ function renderDashboard(rows){
           .join('');
         return `
         <tr style="background:${i%2===0?BG_LIST[gi%BG_LIST.length]:'#fff'};">
-          ${i===0?`<td rowspan="${items.length}" style="font-weight:700;font-size:12px;vertical-align:middle;padding:14px 16px;color:${PALETTE[gi%PALETTE.length]};border-right:3px solid ${PALETTE[gi%PALETTE.length]};background:${BG_LIST[gi%BG_LIST.length]};">${sgLabel(sub,_stIdxs)}</td>`:''}
+          ${i===0?`<td rowspan="${items.length}" style="font-weight:700;font-size:12px;vertical-align:middle;padding:14px 16px;color:${PALETTE[gi%PALETTE.length]};border-right:3px solid ${PALETTE[gi%PALETTE.length]};background:${BG_LIST[gi%BG_LIST.length]};">${sgLabel(sub,window._dashStIdxs)}</td>`:''}
           <td class="rank" style="font-size:13px;font-weight:700;color:#111;">${i+1}</td>
           <td style="font-family:monospace;font-size:13px;font-weight:700;color:#111;">${v.cod||'—'}</td>
           <td style="font-size:13px;font-weight:700;color:#111;">${v.cor||'—'}</td>
@@ -1710,7 +1711,7 @@ const dOptsSG=(labels,data)=>{
   if(cCt)charts.cat=new Chart(cCt,{type:'doughnut',data:{labels:catKeys,datasets:[{data:catData,backgroundColor:catColors,borderWidth:2,borderColor:'#fff',hoverOffset:6}]},options:dOpts(catKeys,catData)});
 
   const sgE=Object.entries(bySGChart).sort((a,b)=>b[1]-a[1]);
-  const sgLabels=sgE.map(([k])=>sgLabel(k,_stIdxs));
+  const sgLabels=sgE.map(([k])=>sgLabel(k,window._dashStIdxs));
   const sgData=sgE.map(([,v])=>v);
   const sgColors=PALETTE.concat(['#FF6BBE','#00B4D8','#F77F00','#4CC9F0','#06D6A0','#7B61FF']).slice(0,sgE.length);
   const cSg=document.getElementById('cSG');
