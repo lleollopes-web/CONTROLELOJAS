@@ -1025,6 +1025,8 @@ function renderDashboard(rows){
   // Subgrupos Calzedonia
   const SG_CALCA    = ['PANTACOLLANT','EASYWEAR PARTES DE BAIXO','EASYWEAR PARTES DE CIMA'];
   const SG_MARE     = ['BEACHWEAR','BIKINI','INTERI','REGGISENI','SLIPPERIA'];
+  const SG_MEIA     = ['CORTO','LUNGO','CALZECOLL CALZINI','GAMBALETTI'];
+  const SG_MEIACALCA= ['AUTOREGGENTI E CALZE','COLLANT','COLLANT LINEA SHAPING'];
 
   // Detecta se o contexto é calzedonia (storeIdx 2) ou intimissimi (0,1)
   // Quando activeStore='all', mostramos colunas de acordo com a mistura
@@ -1035,7 +1037,7 @@ function renderDashboard(rows){
   rows.forEach(r=>{
     const v=(r.VENDEDOR_APELIDO||'').trim();
     if(!v) return;
-    if(!byVend[v]) byVend[v]={qtde:0,val:0,tickets:new Set(),calcinha:0,sutia:0,calca:0,mare:0};
+    if(!byVend[v]) byVend[v]={qtde:0,val:0,tickets:new Set(),calcinha:0,sutia:0,calca:0,mare:0,meia:0,meiacalca:0};
     const qtd=+r.QTDE_LIQUIDA||0;
     byVend[v].qtde+=qtd;
     byVend[v].val+=parseBR(r.VALOR_LIQUIDO_VENDA);
@@ -1047,8 +1049,10 @@ function renderDashboard(rows){
       if(SG_SUTIA.includes(sg))    byVend[v].sutia+=qtd;
     }
     if(si===2){
-      if(SG_CALCA.some(s=>sg===s.toUpperCase())) byVend[v].calca+=qtd;
-      if(SG_MARE.some(s=>sg===s.toUpperCase()))  byVend[v].mare+=qtd;
+      if(SG_CALCA.some(s=>sg===s.toUpperCase()))     byVend[v].calca+=qtd;
+      if(SG_MARE.some(s=>sg===s.toUpperCase()))      byVend[v].mare+=qtd;
+      if(SG_MEIA.some(s=>sg===s.toUpperCase()))      byVend[v].meia+=qtd;
+      if(SG_MEIACALCA.some(s=>sg===s.toUpperCase())) byVend[v].meiacalca+=qtd;
     }
   });
   const topVend=Object.entries(byVend)
@@ -1546,7 +1550,7 @@ function renderDashboard(rows){
         <th>Peças / Ticket</th>
         <th>% Faturamento</th>
         ${hasInti?'<th style="background:rgba(200,0,110,0.06);color:var(--rosa);">Calcinha</th><th style="background:rgba(200,0,110,0.06);color:var(--rosa);">Sutiã</th>':''}
-        ${hasCalz?'<th style="background:rgba(212,144,10,0.08);color:var(--amber);">Calça</th><th style="background:rgba(212,144,10,0.08);color:var(--amber);">Maré</th>':''}
+        ${hasCalz?'<th style="background:rgba(212,144,10,0.08);color:var(--amber);">Calça</th><th style="background:rgba(212,144,10,0.08);color:var(--amber);">Maré</th><th style="background:rgba(0,153,187,0.08);color:var(--cyan);">Meia</th><th style="background:rgba(0,153,187,0.08);color:var(--cyan);">Meia-Calça</th>':''}
       </tr></thead>
       <tbody>${(()=>{
         // Totais
@@ -1558,6 +1562,8 @@ function renderDashboard(rows){
         const totSutia=topVend.reduce((a,[,d])=>a+d.sutia,0);
         const totCalca=topVend.reduce((a,[,d])=>a+d.calca,0);
         const totMare=topVend.reduce((a,[,d])=>a+d.mare,0);
+        const totMeia=topVend.reduce((a,[,d])=>a+d.meia,0);
+        const totMeiaCalca=topVend.reduce((a,[,d])=>a+d.meiacalca,0);
         const totPecasTicket=totTix?(totQtde/totTix).toFixed(1):'—';
         const rows=topVend.map(([v,d],i)=>{
           const pct = fat ? ((d.val/fat)*100).toFixed(1)+'%' : '—';
@@ -1568,7 +1574,9 @@ function renderDashboard(rows){
             : '';
           const calzCols = hasCalz
             ? `<td style="text-align:center;font-weight:700;background:rgba(212,144,10,0.04);">${d.calca>0?fmtN(d.calca):'—'}</td>
-               <td style="text-align:center;font-weight:700;background:rgba(212,144,10,0.04);">${d.mare>0?fmtN(d.mare):'—'}</td>`
+               <td style="text-align:center;font-weight:700;background:rgba(212,144,10,0.04);">${d.mare>0?fmtN(d.mare):'—'}</td>
+               <td style="text-align:center;font-weight:700;background:rgba(0,153,187,0.04);">${d.meia>0?fmtN(d.meia):'—'}</td>
+               <td style="text-align:center;font-weight:700;background:rgba(0,153,187,0.04);">${d.meiacalca>0?fmtN(d.meiacalca):'—'}</td>`
             : '';
           return `<tr>
             <td class="rank">${i<3?`<span style="font-size:16px;">${i===0?'🥇':i===1?'🥈':'🥉'}</span>`:(i+1)}</td>
@@ -1588,7 +1596,9 @@ function renderDashboard(rows){
           : '';
         const totCalzCols = hasCalz
           ? `<td style="text-align:center;font-weight:800;background:rgba(212,144,10,0.07);">${totCalca>0?fmtN(totCalca):'—'}</td>
-             <td style="text-align:center;font-weight:800;background:rgba(212,144,10,0.07);">${totMare>0?fmtN(totMare):'—'}</td>`
+             <td style="text-align:center;font-weight:800;background:rgba(212,144,10,0.07);">${totMare>0?fmtN(totMare):'—'}</td>
+             <td style="text-align:center;font-weight:800;background:rgba(0,153,187,0.07);">${totMeia>0?fmtN(totMeia):'—'}</td>
+             <td style="text-align:center;font-weight:800;background:rgba(0,153,187,0.07);">${totMeiaCalca>0?fmtN(totMeiaCalca):'—'}</td>`
           : '';
         const totRow=`<tr style="background:#f0faf5;border-top:2px solid #ccc;font-weight:800;">
           <td></td>
