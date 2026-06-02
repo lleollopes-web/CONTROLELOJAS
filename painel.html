@@ -94,6 +94,7 @@ select option{background:#fff;color:#111}
 .kpi-card.k3::before{background:linear-gradient(90deg,var(--amber),var(--coral))}
 .kpi-card.k4::before{background:linear-gradient(90deg,var(--cyan),var(--verde))}
 .kpi-card.k5::before{background:linear-gradient(90deg,var(--coral),var(--rosa))}
+.kpi-card.k6::before{background:linear-gradient(90deg,var(--cyan),var(--amber))}
 .kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#555;font-weight:600;margin-bottom:8px}
 .kpi-value{font-family:var(--font-d);font-size:28px;font-weight:700;line-height:1;color:#000}
 .kpi-sub{font-size:12px;color:#666;margin-top:6px}
@@ -947,6 +948,7 @@ function renderDashboard(rows){
   const desc=rows.reduce((a,r)=>a+parseBR(r.VALOR_DESCONTOS),0);
   const tix=new Set(rows.map(r=>r.TICKET)).size;
   const ticketM=tix?(fat/tix):0;
+  const totalFrete=rows.reduce((a,r)=>a+parseBR(r.VALOR_FRETE),0);
 
   // Monthly
   const byMonth={};
@@ -1458,7 +1460,8 @@ function renderDashboard(rows){
       <div class="kpi-card k1 d1"><div class="kpi-icon">💰</div><div class="kpi-label">Faturamento Líquido</div><div class="kpi-value" style="font-size:22px;">${fmtBRL(fat)}</div><div class="kpi-sub">Total do período</div></div>
       <div class="kpi-card k2 d2"><div class="kpi-icon">📦</div><div class="kpi-label">Peças Vendidas</div><div class="kpi-value">${fmtN(qtde)}</div><div class="kpi-sub">Qtde líquida</div></div>
       <div class="kpi-card k3 d3"><div class="kpi-icon">🧾</div><div class="kpi-label">Ticket Médio</div><div class="kpi-value" style="font-size:22px;">${fmtBRL(ticketM)}</div><div class="kpi-sub">${fmtN(tix)} transações</div></div>
-      <div class="kpi-card k5 d5"><div class="kpi-icon">📊</div><div class="kpi-label">Peças / Transação</div><div class="kpi-value">${tix?(qtde/tix).toFixed(1):'—'}</div><div class="kpi-sub">Média por cupom</div></div>
+      <div class="kpi-card k4 d4"><div class="kpi-icon">📊</div><div class="kpi-label">Peças / Transação</div><div class="kpi-value">${tix?(qtde/tix).toFixed(1):'—'}</div><div class="kpi-sub">Média por cupom</div></div>
+      <div class="kpi-card k6 d6"><div class="kpi-icon">🚚</div><div class="kpi-label">Total Frete</div><div class="kpi-value" style="font-size:22px;">${fmtBRL(totalFrete)}</div><div class="kpi-sub">Soma do período</div></div>
       ${yoyHtml}
     </div>
 
