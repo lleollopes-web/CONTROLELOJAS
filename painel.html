@@ -975,6 +975,7 @@ function renderDashboard(rows){
     const qtd=+r.QTDE_LIQUIDA||0;
     if(val===0&&qtd===0)return;
     const col=(r.COLECAO||'').trim();
+    if(col==='0'||col==='')return; // ignorar coleção 0 e vazio em todos os filtros
     _addProd(byProd,cod,cor,p,qtd,val);
     if(col==='1'||col==='3') _addProd(byProdModa,cod,cor,p,qtd,val);
     if(col==='2')             _addProd(byProdBasico,cod,cor,p,qtd,val);
@@ -1017,6 +1018,7 @@ function renderDashboard(rows){
     if(val===0&&qtd===0) return;
     const key=`${cod}|${p}|${cor}`;
     const col=(r.COLECAO||'').trim();
+    if(col==='0'||col==='')return; // ignorar coleção 0 e vazio
     _addSG(bySGTable,sg,key,cod,p,cor,tam,qtd,val);
     if(col==='1'||col==='3') _addSG(bySGModa,sg,key,cod,p,cor,tam,qtd,val);
     if(col==='2')             _addSG(bySGBasico,sg,key,cod,p,cor,tam,qtd,val);
@@ -1494,23 +1496,29 @@ function renderDashboard(rows){
     </div>
     ${activeStore==='all'?`<div class="chart-grid"><div class="chart-card d3" style="grid-column:1/-1;"><div class="chart-title">Faturamento por Loja</div><div style="height:220px;"><canvas id="cStore"></canvas></div></div></div>`:''}
 
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <div class="section-title" style="margin-bottom:0;">Top Produtos</div>
-      <div id="filtroTopProd" style="display:flex;gap:6px;">
-        <button onclick="window._setTopProd('todos')" data-f="todos" style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--rosa);background:var(--rosa);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Todos</button>
-        <button onclick="window._setTopProd('moda')"  data-f="moda"  style="padding:5px 14px;border-radius:20px;border:1.5px solid #ccc;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer;">Moda</button>
-        <button onclick="window._setTopProd('basico')" data-f="basico" style="padding:5px 14px;border-radius:20px;border:1.5px solid #ccc;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer;">Básico</button>
+    <div class="section-title">Top Produtos</div>
+    <div class="table-wrap d1" style="margin-bottom:18px;">
+      <div class="table-header" style="display:flex;align-items:center;justify-content:space-between;">
+        <h3>🏆 Top 10 — Coleção</h3>
+        <div id="filtroTopProd" style="display:flex;gap:6px;">
+          <button onclick="window._setTopProd('todos')" data-f="todos" style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--rosa);background:var(--rosa);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Todos</button>
+          <button onclick="window._setTopProd('moda')"  data-f="moda"  style="padding:5px 14px;border-radius:20px;border:1.5px solid #ccc;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer;">Moda</button>
+          <button onclick="window._setTopProd('basico')" data-f="basico" style="padding:5px 14px;border-radius:20px;border:1.5px solid #ccc;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer;">Básico</button>
+        </div>
       </div>
+      <div id="topProdWrap" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:16px;"></div>
     </div>
-    <div id="topProdWrap" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;"></div>
 
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <div class="section-title" style="margin-bottom:0;">Top 10 por Subgrupo</div>
-      <div style="display:flex;gap:6px;align-items:center;">
-        <div id="filtroTopSG" style="display:flex;gap:6px;">
-          <button onclick="window._setTopSG('todos')" data-f="todos" style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--rosa);background:var(--rosa);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Todos</button>
-          <button onclick="window._setTopSG('moda')"  data-f="moda"  style="padding:5px 14px;border-radius:20px;border:1.5px solid #ccc;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer;">Moda</button>
-          <button onclick="window._setTopSG('basico')" data-f="basico" style="padding:5px 14px;border-radius:20px;border:1.5px solid #ccc;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer;">Básico</button>
+    <div class="section-title">Top 10 por Subgrupo</div>
+    <div class="table-wrap d2">
+      <div class="table-header" style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <h3>10 Produtos Mais Vendidos por Subgrupo</h3>
+          <div id="filtroTopSG" style="display:flex;gap:6px;">
+            <button onclick="window._setTopSG('todos')" data-f="todos" style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--rosa);background:var(--rosa);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Todos</button>
+            <button onclick="window._setTopSG('moda')"  data-f="moda"  style="padding:5px 14px;border-radius:20px;border:1.5px solid #ccc;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer;">Moda</button>
+            <button onclick="window._setTopSG('basico')" data-f="basico" style="padding:5px 14px;border-radius:20px;border:1.5px solid #ccc;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer;">Básico</button>
+          </div>
         </div>
         <button id="btnToggleSizes" onclick="(function(){const show=document.getElementById('btnToggleSizes').dataset.on!=='1';document.querySelectorAll('.sz-col').forEach(el=>el.style.display=show?'':'none');document.getElementById('btnToggleSizes').dataset.on=show?'1':'0';document.getElementById('btnToggleSizes').textContent=show?'🔽 Ocultar Tamanhos':'📐 Ver Tamanhos';})()"
           style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:#555;">
