@@ -94,6 +94,7 @@ select option{background:#fff;color:#111}
 .kpi-card.k3::before{background:linear-gradient(90deg,var(--amber),var(--coral))}
 .kpi-card.k4::before{background:linear-gradient(90deg,var(--cyan),var(--verde))}
 .kpi-card.k5::before{background:linear-gradient(90deg,var(--coral),var(--rosa))}
+.kpi-card.k6::before{background:linear-gradient(90deg,var(--cyan),var(--amber))}
 .kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#555;font-weight:600;margin-bottom:8px}
 .kpi-value{font-family:var(--font-d);font-size:28px;font-weight:700;line-height:1;color:#000}
 .kpi-sub{font-size:12px;color:#666;margin-top:6px}
@@ -320,8 +321,8 @@ const SG_TRANSLATE = {
   'CALZ:PANTACOLLANT':            'CALÇA (MIP MODP)',
   'CALZ:CORTO':                   'MEIA CURTA (DC UC BC)',
   'CALZ:LUNGO':                   'MEIA LONGA (DL)',
-  'CALZ:EASYWEAR PARTES DE BAIXO':'ACADEMIA (MODP–TREINO)',
-  'CALZ:EASYWEAR PARTES DE CIMA': 'ACADEMIA (MODT–TREINO)',
+  'CALZ:EASYWEAR PARTES DE BAIXO':'CALÇA (MODP)',
+  'CALZ:EASYWEAR PARTES DE CIMA': 'CALÇA (MODT)',
   'CALZ:BEACHWEAR':               'MARÉ (PA 0BDA 0BDP)',
   'CALZ:REGGISENI':               'MARÉ (BIQUÍNI - SUTIÃ)',
   'CALZ:SLIPPERIA':               'MARÉ (BIQUÍNI - CALCINHA)',
@@ -453,8 +454,7 @@ function parseDate(s){
 }
 const fmtBRL=v=>'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtN=v=>v.toLocaleString('pt-BR');
-// Faturamento líquido real: VALOR_LIQUIDO_VENDA - 2 × VALOR_FRETE
-const fatLiq=r=>parseBR(r.VALOR_LIQUIDO_VENDA) - 2*parseBR(r.VALOR_FRETE);
+const fatLiq=r=>parseBR(r.VALOR_LIQUIDO_VENDA)-2*parseBR(r.VALOR_FRETE);
 
 /* STATUS */
 function setStatus(state,msg){
@@ -947,6 +947,7 @@ function renderDashboard(rows){
   const desc=rows.reduce((a,r)=>a+parseBR(r.VALOR_DESCONTOS),0);
   const tix=new Set(rows.map(r=>r.TICKET)).size;
   const ticketM=tix?(fat/tix):0;
+  const totalFrete=rows.reduce((a,r)=>a+parseBR(r.VALOR_FRETE),0);
 
   // Monthly
   const byMonth={};
@@ -1044,6 +1045,8 @@ function renderDashboard(rows){
   // Subgrupos Calzedonia
   const SG_CALCA    = ['PANTACOLLANT','EASYWEAR PARTES DE BAIXO','EASYWEAR PARTES DE CIMA'];
   const SG_MARE     = ['BEACHWEAR','BIKINI','INTERI','REGGISENI','SLIPPERIA'];
+  const SG_MEIA     = ['CORTO','LUNGO','CALZECOLL CALZINI','GAMBALETTI'];
+  const SG_MEIACALCA= ['AUTOREGGENTI E CALZE','COLLANT','COLLANT LINEA SHAPING'];
 
   // Detecta se o contexto é calzedonia (storeIdx 2) ou intimissimi (0,1)
   // Quando activeStore='all', mostramos colunas de acordo com a mistura
@@ -1054,7 +1057,7 @@ function renderDashboard(rows){
   rows.forEach(r=>{
     const v=(r.VENDEDOR_APELIDO||'').trim();
     if(!v) return;
-    if(!byVend[v]) byVend[v]={qtde:0,val:0,tickets:new Set(),calcinha:0,sutia:0,calca:0,mare:0};
+    if(!byVend[v]) byVend[v]={qtde:0,val:0,tickets:new Set(),calcinha:0,sutia:0,calca:0,mare:0,meia:0,meiacalca:0};
     const qtd=+r.QTDE_LIQUIDA||0;
     byVend[v].qtde+=qtd;
     byVend[v].val+=fatLiq(r);
@@ -1066,8 +1069,10 @@ function renderDashboard(rows){
       if(SG_SUTIA.includes(sg))    byVend[v].sutia+=qtd;
     }
     if(si===2){
-      if(SG_CALCA.some(s=>sg===s.toUpperCase())) byVend[v].calca+=qtd;
-      if(SG_MARE.some(s=>sg===s.toUpperCase()))  byVend[v].mare+=qtd;
+      if(SG_CALCA.some(s=>sg===s.toUpperCase()))      byVend[v].calca+=qtd;
+      if(SG_MARE.some(s=>sg===s.toUpperCase()))       byVend[v].mare+=qtd;
+      if(SG_MEIA.some(s=>sg===s.toUpperCase()))       byVend[v].meia+=qtd;
+      if(SG_MEIACALCA.some(s=>sg===s.toUpperCase()))  byVend[v].meiacalca+=qtd;
     }
   });
   const topVend=Object.entries(byVend)
@@ -1472,6 +1477,7 @@ function renderDashboard(rows){
       <div class="kpi-card k2 d2"><div class="kpi-icon">📦</div><div class="kpi-label">Peças Vendidas</div><div class="kpi-value">${fmtN(qtde)}</div><div class="kpi-sub">Qtde líquida</div></div>
       <div class="kpi-card k3 d3"><div class="kpi-icon">🧾</div><div class="kpi-label">Ticket Médio</div><div class="kpi-value" style="font-size:22px;">${fmtBRL(ticketM)}</div><div class="kpi-sub">${fmtN(tix)} transações</div></div>
       <div class="kpi-card k5 d5"><div class="kpi-icon">📊</div><div class="kpi-label">Peças / Transação</div><div class="kpi-value">${tix?(qtde/tix).toFixed(1):'—'}</div><div class="kpi-sub">Média por cupom</div></div>
+      <div class="kpi-card k6 d6"><div class="kpi-icon">🚚</div><div class="kpi-label">Total Frete</div><div class="kpi-value" style="font-size:22px;">${fmtBRL(totalFrete)}</div><div class="kpi-sub">Soma do período</div></div>
       ${yoyHtml}
     </div>
 
@@ -1496,24 +1502,20 @@ function renderDashboard(rows){
         <button onclick="window._setTopProd('basico')" data-f="basico" style="padding:5px 14px;border-radius:20px;border:1.5px solid #ccc;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer;">Básico</button>
       </div>
     </div>
-
     <div id="topProdWrap" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;"></div>
 
-    <div class="section-title">Top 10 por Subgrupo</div>
-    <div class="table-wrap d2">
-      <div class="table-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-        <h3>10 Produtos Mais Vendidos por Subgrupo</h3>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <div id="filtroTopSG" style="display:flex;gap:6px;">
-            <button onclick="window._setTopSG('todos')" data-f="todos" style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--rosa);background:var(--rosa);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Todos</button>
-            <button onclick="window._setTopSG('moda')"  data-f="moda"  style="padding:5px 14px;border-radius:20px;border:1.5px solid #ccc;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer;">Moda</button>
-            <button onclick="window._setTopSG('basico')" data-f="basico" style="padding:5px 14px;border-radius:20px;border:1.5px solid #ccc;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer;">Básico</button>
-          </div>
-          <button id="btnToggleSizes" onclick="(function(){const show=document.getElementById('btnToggleSizes').dataset.on!=='1';document.querySelectorAll('.sz-col').forEach(el=>el.style.display=show?'':'none');document.getElementById('btnToggleSizes').dataset.on=show?'1':'0';document.getElementById('btnToggleSizes').textContent=show?'🔽 Ocultar Tamanhos':'📐 Ver Tamanhos';})()"
-            style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:#555;">
-            📐 Ver Tamanhos
-          </button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div class="section-title" style="margin-bottom:0;">Top 10 por Subgrupo</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <div id="filtroTopSG" style="display:flex;gap:6px;">
+          <button onclick="window._setTopSG('todos')" data-f="todos" style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--rosa);background:var(--rosa);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Todos</button>
+          <button onclick="window._setTopSG('moda')"  data-f="moda"  style="padding:5px 14px;border-radius:20px;border:1.5px solid #ccc;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer;">Moda</button>
+          <button onclick="window._setTopSG('basico')" data-f="basico" style="padding:5px 14px;border-radius:20px;border:1.5px solid #ccc;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer;">Básico</button>
         </div>
+        <button id="btnToggleSizes" onclick="(function(){const show=document.getElementById('btnToggleSizes').dataset.on!=='1';document.querySelectorAll('.sz-col').forEach(el=>el.style.display=show?'':'none');document.getElementById('btnToggleSizes').dataset.on=show?'1':'0';document.getElementById('btnToggleSizes').textContent=show?'🔽 Ocultar Tamanhos':'📐 Ver Tamanhos';})()"
+          style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:#555;">
+          📐 Ver Tamanhos
+        </button>
       </div>
       <div id="topSGWrap"></div>
     </div>
@@ -1531,7 +1533,7 @@ function renderDashboard(rows){
         <th>Peças / Ticket</th>
         <th>% Faturamento</th>
         ${hasInti?'<th style="background:rgba(200,0,110,0.06);color:var(--rosa);">Calcinha</th><th style="background:rgba(200,0,110,0.06);color:var(--rosa);">Sutiã</th>':''}
-        ${hasCalz?'<th style="background:rgba(212,144,10,0.08);color:var(--amber);">Calça</th><th style="background:rgba(212,144,10,0.08);color:var(--amber);">Maré</th>':''}
+        ${hasCalz?'<th style="background:rgba(212,144,10,0.08);color:var(--amber);">Calça</th><th style="background:rgba(212,144,10,0.08);color:var(--amber);">Maré</th><th style="background:rgba(0,153,187,0.08);color:var(--cyan);">Meia</th><th style="background:rgba(0,153,187,0.08);color:var(--cyan);">Meia-Calça</th>':''}
       </tr></thead>
       <tbody>${(()=>{
         // Totais
@@ -1543,6 +1545,8 @@ function renderDashboard(rows){
         const totSutia=topVend.reduce((a,[,d])=>a+d.sutia,0);
         const totCalca=topVend.reduce((a,[,d])=>a+d.calca,0);
         const totMare=topVend.reduce((a,[,d])=>a+d.mare,0);
+        const totMeia=topVend.reduce((a,[,d])=>a+d.meia,0);
+        const totMeiaCalca=topVend.reduce((a,[,d])=>a+d.meiacalca,0);
         const totPecasTicket=totTix?(totQtde/totTix).toFixed(1):'—';
         const rows=topVend.map(([v,d],i)=>{
           const pct = fat ? ((d.val/fat)*100).toFixed(1)+'%' : '—';
@@ -1553,7 +1557,9 @@ function renderDashboard(rows){
             : '';
           const calzCols = hasCalz
             ? `<td style="text-align:center;font-weight:700;background:rgba(212,144,10,0.04);">${d.calca>0?fmtN(d.calca):'—'}</td>
-               <td style="text-align:center;font-weight:700;background:rgba(212,144,10,0.04);">${d.mare>0?fmtN(d.mare):'—'}</td>`
+               <td style="text-align:center;font-weight:700;background:rgba(212,144,10,0.04);">${d.mare>0?fmtN(d.mare):'—'}</td>
+               <td style="text-align:center;font-weight:700;background:rgba(0,153,187,0.04);">${d.meia>0?fmtN(d.meia):'—'}</td>
+               <td style="text-align:center;font-weight:700;background:rgba(0,153,187,0.04);">${d.meiacalca>0?fmtN(d.meiacalca):'—'}</td>`
             : '';
           return `<tr>
             <td class="rank">${i<3?`<span style="font-size:16px;">${i===0?'🥇':i===1?'🥈':'🥉'}</span>`:(i+1)}</td>
@@ -1573,7 +1579,9 @@ function renderDashboard(rows){
           : '';
         const totCalzCols = hasCalz
           ? `<td style="text-align:center;font-weight:800;background:rgba(212,144,10,0.07);">${totCalca>0?fmtN(totCalca):'—'}</td>
-             <td style="text-align:center;font-weight:800;background:rgba(212,144,10,0.07);">${totMare>0?fmtN(totMare):'—'}</td>`
+             <td style="text-align:center;font-weight:800;background:rgba(212,144,10,0.07);">${totMare>0?fmtN(totMare):'—'}</td>
+             <td style="text-align:center;font-weight:800;background:rgba(0,153,187,0.07);">${totMeia>0?fmtN(totMeia):'—'}</td>
+             <td style="text-align:center;font-weight:800;background:rgba(0,153,187,0.07);">${totMeiaCalca>0?fmtN(totMeiaCalca):'—'}</td>`
           : '';
         const totRow=`<tr style="background:#f0faf5;border-top:2px solid #ccc;font-weight:800;">
           <td></td>
@@ -1709,7 +1717,7 @@ const dOptsSG=(labels,data)=>{
     charts.store=new Chart(cSt,{type:'bar',data:{labels:sv.map(s=>s.name),datasets:[{data:sv.map(s=>s.val),backgroundColor:PALETTE,borderRadius:8,borderSkipped:false}]},options:cOpts(fmtBRL)});
   }
 
-  // ── Helpers de renderização dos módulos filtráveis ──────────────────────
+  // ── Helpers filtros coleção ──────────────────────────────────────────────
   const _renderTopProdHTML=(tpQ,tpF)=>`
     <div class="table-wrap d1">
       <div class="table-header"><h3>🏆 Top 10 por Quantidade</h3></div>
@@ -1736,7 +1744,7 @@ const dOptsSG=(labels,data)=>{
       </tr>`).join('')}</tbody></table>
     </div>`;
 
-  const _renderTopSGHTML=(data)=>`
+  const _renderTopSGHTML=data=>`
     <table><thead><tr>
       <th>Subgrupo</th><th>#</th><th style="color:#111;">Código</th><th style="color:#111;">Cor</th>
       <th class="sz-col" style="display:none;color:#111;">Tamanhos</th><th style="color:#111;">Produto</th>
@@ -1756,30 +1764,23 @@ const dOptsSG=(labels,data)=>{
         <td style="font-weight:700;color:#111;">${fmtBRL(v.val)}</td>
       </tr>`;}).join('')).join('')}</tbody></table>`;
 
-  const _btnStyle=(active)=>active
-    ?'padding:5px 14px;border-radius:20px;border:1.5px solid var(--rosa);background:var(--rosa);color:#fff;font-size:12px;font-weight:700;cursor:pointer;'
-    :'padding:5px 14px;border-radius:20px;border:1.5px solid #ccc;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer;';
-
-  const _updateBtns=(containerId,active)=>{
-    document.querySelectorAll(`#${containerId} button`).forEach(b=>{
-      b.style.cssText=_btnStyle(b.dataset.f===active);
-    });
-  };
+  const _btnOn ='padding:5px 14px;border-radius:20px;border:1.5px solid var(--rosa);background:var(--rosa);color:#fff;font-size:12px;font-weight:700;cursor:pointer;';
+  const _btnOff='padding:5px 14px;border-radius:20px;border:1.5px solid #ccc;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer;';
+  const _updBtn=(cid,f)=>document.querySelectorAll(`#${cid} button`).forEach(b=>{b.style.cssText=b.dataset.f===f?_btnOn:_btnOff;});
 
   window._setTopProd=f=>{
     const tpQ=f==='moda'?topProdModa:f==='basico'?topProdBasico:topProd;
     const tpF=f==='moda'?topProdFatModa:f==='basico'?topProdFatBasico:topProdFat;
     document.getElementById('topProdWrap').innerHTML=_renderTopProdHTML(tpQ,tpF);
-    _updateBtns('filtroTopProd',f);
+    _updBtn('filtroTopProd',f);
   };
-
   window._setTopSG=f=>{
     const data=f==='moda'?topBySGModa:f==='basico'?topBySGBasico:topBySG;
     document.getElementById('topSGWrap').innerHTML=_renderTopSGHTML(data);
-    _updateBtns('filtroTopSG',f);
+    _updBtn('filtroTopSG',f);
   };
 
-  // Renderização inicial (Todos)
+  // Renderização inicial
   window._setTopProd('todos');
   window._setTopSG('todos');
 
